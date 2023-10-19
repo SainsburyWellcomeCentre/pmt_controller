@@ -6,9 +6,9 @@ from primitives import Queue
 from pmt_display import PmtDisplay
 
 i2c = I2C(0, scl=Pin(5), sda=Pin(4), freq=400000)
-dac1 = mcp4725.MCP4725(i2c)
+dac2 = mcp4725.MCP4725(i2c)
 #dac1 = mcp4725.MCP4725(i2c,address=const(0x60))
-dac2 = mcp4725.MCP4725(i2c,address=const(0x61))
+dac1 = mcp4725.MCP4725(i2c,address=const(0x61))
 
 #Pin 26 ADC0 = vref_ext1
 #Pin 28 ADC2 = vref_ext2
@@ -29,7 +29,7 @@ async def update_dac(q):
     while True:
         lux_volt = await q.get()
         print(lux_volt)
-        dac2.write_dac(lux_volt)
+        dac1.write_dac(lux_volt)
         display1.update_display_voltage(lux_volt)
 
 async def print_adc(q):

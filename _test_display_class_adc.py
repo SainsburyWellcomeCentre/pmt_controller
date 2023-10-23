@@ -1,4 +1,4 @@
-import asyncio
+import uasyncio as asyncio
 from micropython import const
 from machine import ADC, I2C, Pin, PWM
 import mcp4725

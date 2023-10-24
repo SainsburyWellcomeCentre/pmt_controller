@@ -9,12 +9,14 @@ class PmtDisplay():
         
         self.regs = {
             'status': False,
-            'display_voltage': (2244, False),
+            'voltage': (2244, False),
             'set_voltage': (0000, 0),
-            'display_interlock': 0,
+            'interlock': 0,
             'set_interlock': (0000, 0),
             'mode': 0
         }
+        
+        self.regs_old = self.regs.copy()
         
         self.pwm = PWM(Pin(bl), freq=2000, duty_u16=15000)
         spibus = SPIBus(cs=cs, dc=dc, sck=sck, mosi=mosi)
@@ -39,17 +41,17 @@ class PmtDisplay():
         self.display.clear()
         self.display.update()
         
-    def update_display_voltage(self):
+    def update_voltage(self):
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(3)
         self.display.rectangle(0, 80, 240, 80)
-        if self.regs['display_voltage'][1]:
+        if self.regs['voltage'][1]:
             self.display.set_pen(self.RED)
         else:
             self.display.set_pen(self.WHITE)
-        self.display.text("{:04.0f}V".format(self.regs['display_voltage'][0]),25,120,scale=2)
+        self.display.text("{:04.0f}V".format(self.regs['voltage'][0]),25,120,scale=2)
         
-    def set_display_voltage(self):
+    def set_voltage(self):
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(3)
         self.display.rectangle(0, 80, 240, 80)
@@ -58,14 +60,14 @@ class PmtDisplay():
         self.display.rectangle(150-(self.regs['set_voltage'][1]*40), 145, 30, 4)
         self.display.rectangle(150-(self.regs['set_voltage'][1]*40), 85, 30, 4)
         
-    def update_display_interlock_level(self):
+    def update_interlock_level(self):
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(2)
         self.display.rectangle(121, 201, 119, 39)
         self.display.set_pen(self.WHITE)
-        self.display.text("{:04.0f}u".format(self.regs['display_interlock']),130,221,scale=1)
+        self.display.text("{:04.0f}u".format(self.regs['interlock']),130,221,scale=1)
         
-    def set_display_interlock_level(self):
+    def set_interlock_level(self):
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(2)
         self.display.rectangle(121, 201, 119, 39)
@@ -74,7 +76,7 @@ class PmtDisplay():
         self.display.rectangle(195-(self.regs['set_interlock'][1]*10), 233, 10, 2)
         self.display.rectangle(195-(self.regs['set_interlock'][1]*10), 203, 10, 2)  
         
-    def update_display_pmt_status(self):
+    def update_pmt_status(self):
         if self.regs['status']:
             self.display.set_pen(self.BLACK)
             self.display.set_thickness(3)
@@ -88,7 +90,7 @@ class PmtDisplay():
             self.display.set_pen(self.GREY)
             self.display.text("PMT OFF", 56, 24, scale=1)
               
-    def update_display_user_mode(self):
+    def update_user_mode(self):
         if self.regs['mode'] == 0:
             self.display.set_pen(self.BLACK)
             self.display.set_thickness(2)
@@ -124,4 +126,18 @@ class PmtDisplay():
         self.display.text("LEVEL", 160, 190, scale=0.5)
         
     def update(self):
+        if self.regs['voltage'] != self.regs_old['voltage']:
+            self.update_voltage()
+        if self.regs['set_voltage'] != self.regs_old['set_voltage']:
+            self.set_voltage()
+        if self.regs['interlock'] != self.regs_old['interlock']:
+            self.update_interlock_level()
+        if self.regs['set_interlock'] != self.regs_old['set_interlock']:
+            self.set_interlock_level()
+        if self.regs['status'] != self.regs_old['status']:
+            self.update_pmt_status()
+        if self.regs['mode'] != self.regs_old['mode']:
+            self.update_user_mode()
+        
+        self.regs_old = self.regs.copy()
         self.display.update()

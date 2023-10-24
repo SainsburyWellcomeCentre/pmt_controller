@@ -37,20 +37,21 @@ enable_15V.off()
 def _short_press():
     print("SHORT")
     display1.set_background()
-    display1.regs['display_voltage'] = (1234, True)
-    display1.update_display_voltage()
+    display1.regs['voltage'] = (1234, True)
+    display1.regs['status'] = True
+    display1.regs['mode'] = 2
     display1.update()
     
 def _double_press():
     print("DOUBLE")
-    display1.regs['display_voltage'] = (1023, True)
-    display1.update_display_voltage()
+    display1.regs['voltage'] = (1023, True)
+#    display1.update_volatge()
     display1.update()
     
 def _long_press():
     print("LONG")
     display1.regs['set_voltage'] = (1234, 2)
-    display1.set_display_voltage()
+#    display1.set_voltage()
     display1.update()
 
 def get_pos_nums(num):
@@ -91,8 +92,8 @@ async def update_dac(q):
             enable_15V.off()
         
         dac1.write_dac(lux_volt)
-        display1.regs['display_interlock'] = lux_volt
-        display1.update_display_interlock_level()
+        display1.regs['interlock'] = lux_volt
+        display1.update_interlock_level()
         display1.update()
 
 async def print_adc(q):

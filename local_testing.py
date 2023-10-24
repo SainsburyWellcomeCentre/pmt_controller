@@ -5,6 +5,8 @@ import mcp4725
 from primitives import Queue, Pushbutton, Encoder
 from pmt_display import PmtDisplay
 
+from threadsafe import ThreadSafeQueue
+
 btn = Pin(7, Pin.IN, Pin.PULL_UP)	#GP1 = Enc 2, GP7 = Enc 1
 pb = Pushbutton(btn, suppress=True)
 
@@ -24,7 +26,6 @@ dac1 = mcp4725.MCP4725(i2c,address=const(0x61))
 display1 = PmtDisplay(cs=13, dc=11, sck=14, mosi=15, bl=20)
 display2 = PmtDisplay(cs=17, dc=16, sck=18, mosi=19, bl=12)
 
-
 def cb(pos, delta):
     print(pos, delta)
     
@@ -36,18 +37,21 @@ enable_15V.off()
 def _short_press():
     print("SHORT")
     display1.set_background()
-    display1.update_display_voltage(1234)
-    display1.update_display_pmt_status(True)
+    display1.regs['display_voltage'] = (1234, True)
+    display1.update_display_voltage()
+    display1.update()
     
 def _double_press():
     print("DOUBLE")
-    display1.update_display_user_mode(2)
-    display1.update_display_interlock_level(4234)
-    display1.update_display_pmt_status(False)
+    display1.regs['display_voltage'] = (1023, True)
+    display1.update_display_voltage()
+    display1.update()
     
 def _long_press():
     print("LONG")
-    display1.set_display_voltage(1234, 1)
+    display1.regs['set_voltage'] = (1234, 2)
+    display1.set_display_voltage()
+    display1.update()
 
 def get_pos_nums(num):
     pos_nums = [0, 0, 0, 0]
@@ -87,7 +91,9 @@ async def update_dac(q):
             enable_15V.off()
         
         dac1.write_dac(lux_volt)
-#        display1.update_display_voltage(lux_volt)
+        display1.regs['display_interlock'] = lux_volt
+        display1.update_display_interlock_level()
+        display1.update()
 
 async def print_adc(q):
     while True:
@@ -95,6 +101,7 @@ async def print_adc(q):
 #        print(value)
 
 async def main():
+    to_core2 = ThreadSafeQueue(display1.regs)
     short_press = pb.release_func(_short_press, ())
     double_press = pb.double_func(_double_press, ())
     long_press = pb.long_func(_long_press, ())
@@ -104,8 +111,8 @@ async def main():
 #    q2 = Queue()
 #    asyncio.create_task(read_adc(0, 100, q0))
 #    asyncio.create_task(read_adc(0, 100, q2))
-#    asyncio.create_task(read_adc(1, 3, q))
-#    asyncio.create_task(update_dac(q))
+    asyncio.create_task(read_adc(1, 3, q))
+    asyncio.create_task(update_dac(q))
 #    asyncio.create_task(print_adc(q0))
 #    asyncio.create_task(print_adc(q2))
     while True:

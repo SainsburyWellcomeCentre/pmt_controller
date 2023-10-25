@@ -2,17 +2,10 @@ import uasyncio as asyncio
 from threadsafe import ThreadSafeQueue
 import _thread
 from time import sleep_ms
-from pmt_display import PmtDisplay
+from pmt_display import PmtDisplay, display
 from machine import ADC, Pin
 
-disp_regs = {
-    'status': (False, False),
-    'voltage': (0000, False),
-    'set_voltage': (False, 0000, 0),
-    'interlock': (False, 0000),
-    'set_interlock': (False, 0000, 0),
-    'mode': (False, 0)
-}
+disp_regs = display.registers
 
 def core_2(getq, putq):  # Run on core 2
     display1 = PmtDisplay(cs=13, dc=11, sck=14, mosi=15, bl=20)
@@ -44,7 +37,7 @@ async def read_adc(channel, period_ms, q):
         except IndexError:
             pass
             # Queue is full
-            
+          
         await asyncio.sleep_ms(period_ms)       
 
 async def main():
@@ -57,3 +50,5 @@ async def main():
         await asyncio.sleep(1)
 
 asyncio.run(main())
+
+

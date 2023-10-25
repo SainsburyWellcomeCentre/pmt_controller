@@ -5,6 +5,7 @@ from time import sleep_ms
 
 def core_2(getq, putq):  # Run on core 2
     buf = []
+    print("core 2")
     while True:
         while getq.qsize():  # Ensure no exception when queue is empty
             buf.append(getq.get_sync())
@@ -22,6 +23,7 @@ async def main():
     to_core2 = ThreadSafeQueue([0 for _ in range(10)])
     from_core2 = ThreadSafeQueue([0 for _ in range(10)])
     _thread.start_new_thread(core_2, (to_core2, from_core2))
+    print("core 1")
     asyncio.create_task(sender(to_core2))
     n = 0
     async for x in from_core2:

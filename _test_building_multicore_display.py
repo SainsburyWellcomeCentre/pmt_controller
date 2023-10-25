@@ -39,9 +39,6 @@ async def read_adc(channel, period_ms, q):
         adc = ADC(Pin(26+channel))
         reading = min(adc.read_u16()>>3, 4095)        
         disp_regs['voltage'] = (True, reading, True)
-#        print(reading)
-#        await q.put(disp_regs)
-#        await asyncio.sleep_ms(period_ms)
         try:
             q.put_sync(disp_regs)
         except IndexError:

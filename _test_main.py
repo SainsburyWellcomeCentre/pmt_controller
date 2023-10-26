@@ -6,7 +6,7 @@ from micropython import const
 from pmt_display import PmtDisplay, display
 from machine import ADC, I2C, Pin, PWM
 import mcp4725
-from primitives import Queue, Pushbutton, Encoder
+from primitives import Queue, Pushbutton, Encoder, Switch
 
 disp1 = display()
 disp_regs1 = disp1.registers
@@ -96,6 +96,33 @@ def core_2(q1, q2):  # Run on core 2
         display2.regs = q2.get_sync(block=True)
         display2.update()
         
+async def switch_close1(evt):
+    while True:
+        evt.clear()  # re-enable the event
+        await evt.wait()  # minimal resources used while paused
+        print("Switch 1 closed.")
+        # Omitted code runs each time the switch closes
+
+async def switch_open1(evt):
+    while True:
+        evt.clear()  # re-enable the event
+        await evt.wait()  # minimal resources used while paused
+        print("Switch 1 open.")
+        # Omitted code runs each time the switch closes
+
+async def switch_close2(evt):
+    while True:
+        evt.clear()  # re-enable the event
+        await evt.wait()  # minimal resources used while paused
+        print("Switch 2 closed.")
+        # Omitted code runs each time the switch closes
+
+async def switch_open2(evt):
+    while True:
+        evt.clear()  # re-enable the event
+        await evt.wait()  # minimal resources used while paused
+        print("Switch 2 open.")
+        # Omitted code runs each time the switch closes
 
 async def read_adc(channel, period_ms, q1, q2):
     while True:
@@ -137,6 +164,17 @@ async def main():
     # set up encoders
     enc1 = Encoder(px1, py1, div=4, v=0, vmin=0, vmax=9, wrap=True, callback=cb1)
     enc2 = Encoder(px2, py2, div=4, v=0, vmin=0, vmax=9, wrap=True, callback=cb2)
+    # set up switches
+    sw1 = Switch(Pin(10, Pin.IN))	#GP6 = Enc 2, GP10 = Enc 1
+    sw1.close_func(None)  # Use event based interface
+    sw1.open_func(None)
+    switch_close1_task = asyncio.create_task(switch_close1(sw1.close))
+    switch_open1_task = asyncio.create_task(switch_open1(sw1.open))
+    sw2 = Switch(Pin(6, Pin.IN))	#GP6 = Enc 2, GP10 = Enc 1
+    sw2.close_func(None)  # Use event based interface
+    sw2.open_func(None)
+    switch_close2_task = asyncio.create_task(switch_close2(sw2.close))
+    switch_open2_task = asyncio.create_task(switch_open2(sw2.open))
     
     
     while True:

@@ -129,7 +129,7 @@ async def read_adc(channel, period_ms, q1, q2):
         adc = ADC(Pin(26+channel))
         reading = min(adc.read_u16()>>3, 4095)        
         disp_regs1['interlock'] = (True, reading)        
-        disp_regs2['interlock'] = (True, reading>>1)
+        disp_regs2['interlock'] = (True, reading)
         if reading < 2000:
             disp_regs1['status'] = (True, True)
         else:
@@ -147,6 +147,39 @@ async def read_adc(channel, period_ms, q1, q2):
           
         await asyncio.sleep_ms(period_ms)       
 
+#async def read_DAQ(channel, period_ms, q):
+#    while True:
+#        adc = ADC(Pin(26+channel))
+#        reading = min(adc.read_u16()>>3, 4095)
+#        await q.put(reading)
+#        await asyncio.sleep_ms(period_ms)       
+
+async def read_DAQ(channel, period_ms, disp_regs, q):
+    while True:
+        adc = ADC(Pin(26+channel))
+        reading = min(adc.read_u16()>>3, 4095)
+        disp_regs['voltage'] = (True, reading) 
+        try:
+            q.put_sync(disp_regs)
+        except IndexError:
+            pass
+            # Queue is full
+            
+#        await q.put(reading)
+        await asyncio.sleep_ms(period_ms)
+
+#async def update_voltage1(q):
+#    while True:
+#        value = await q.get()
+#        disp_regs1['voltage'] = (True, value)
+#        print(value)
+
+#async def update_voltage2(q):
+#    while True:
+#        value = await q.get()
+#        disp_regs2['voltage'] = (True, value)
+#        print(value)
+
 async def main():
     # Set up thread safe queue for displays and tasks
     disp1_to_core2 = ThreadSafeQueue(disp_regs1)
@@ -154,6 +187,16 @@ async def main():
     _thread.start_new_thread(core_2, (disp1_to_core2, disp2_to_core2))
     # set up reading ADC for light measurement
     asyncio.create_task(read_adc(1, 3, disp1_to_core2, disp2_to_core2))
+    # set up reading ADCs for DAQ input
+#    q1 = Queue()
+#    q2 = Queue()
+#    asyncio.create_task(read_DAQ(2, 100, q1))
+#    asyncio.create_task(read_DAQ(0, 100, q2))
+#    asyncio.create_task(update_voltage1(q1))
+#    asyncio.create_task(update_voltage2(q2))
+    asyncio.create_task(read_DAQ(2, 100, disp_regs1, disp1_to_core2))
+    asyncio.create_task(read_DAQ(0, 100, disp_regs2, disp2_to_core2))
+#    asyncio.create_task(read_DAQ(0, 100))
     # set up button presses
     short_press1 = pb1.release_func(_short_press1, ())
     double_press1 = pb1.double_func(_double_press1, ())

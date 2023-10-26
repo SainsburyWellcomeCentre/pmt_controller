@@ -7,12 +7,18 @@ from pmt_display import PmtDisplay, display
 from machine import ADC, I2C, Pin, PWM
 import mcp4725
 from primitives import Queue, Pushbutton, Encoder, Switch
+import gc
 
 disp1 = display()
 disp_regs1 = disp1.registers
 
 disp2 = display()
 disp_regs2 = disp2.registers
+
+pmt_enable1 = Pin(21, Pin.OUT)	#GP22 = Enc 2, GP21 = Enc 1
+pmt_enable1.off()
+pmt_enable2 = Pin(22, Pin.OUT)	#GP22 = Enc 2, GP21 = Enc 1
+pmt_enable2.off()
 
 btn1 = Pin(7, Pin.IN, Pin.PULL_UP)	#GP1 = Enc 2, GP7 = Enc 1
 pb1 = Pushbutton(btn1, suppress=True)
@@ -79,15 +85,13 @@ def core_2(q1, q2):  # Run on core 2
     display2 = PmtDisplay(cs=17, dc=16, sck=18, mosi=19, bl=12)
     
     display1.set_background()
-    display1.regs['voltage'] = (True, 1234, True)
-    display1.regs['status'] = (True, True)
-    display1.regs['mode'] = (True, 2)
+    display1.regs['voltage'] = (True, 0, False)
+    display1.regs['status'] = (True, False)
     display1.update()
     
     display2.set_background()
-    display2.regs['voltage'] = (True, 5678, True)
-    display2.regs['status'] = (True, True)
-    display2.regs['mode'] = (True, 2)
+    display2.regs['voltage'] = (True, 0, False)
+    display2.regs['status'] = (True, False)
     display2.update()
     
     while True:
@@ -101,6 +105,7 @@ async def switch_close1(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 1 closed.")
+        disp_regs1['mode'] = (True, 2)
         # Omitted code runs each time the switch closes
 
 async def switch_open1(evt):
@@ -108,6 +113,7 @@ async def switch_open1(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 1 open.")
+        disp_regs1['mode'] = (True, 0)
         # Omitted code runs each time the switch closes
 
 async def switch_close2(evt):
@@ -115,6 +121,7 @@ async def switch_close2(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 2 closed.")
+        disp_regs2['mode'] = (True, 2)
         # Omitted code runs each time the switch closes
 
 async def switch_open2(evt):
@@ -122,6 +129,7 @@ async def switch_open2(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 2 open.")
+        disp_regs2['mode'] = (True, 0)
         # Omitted code runs each time the switch closes
 
 async def read_adc(channel, period_ms, q1, q2):
@@ -144,15 +152,10 @@ async def read_adc(channel, period_ms, q1, q2):
         except IndexError:
             pass
             # Queue is full
-          
-        await asyncio.sleep_ms(period_ms)       
-
-#async def read_DAQ(channel, period_ms, q):
-#    while True:
-#        adc = ADC(Pin(26+channel))
-#        reading = min(adc.read_u16()>>3, 4095)
-#        await q.put(reading)
-#        await asyncio.sleep_ms(period_ms)       
+         
+        dac1.write_dac(reading)
+        dac2.write_dac(reading)
+        await asyncio.sleep_ms(period_ms)        
 
 async def read_DAQ(channel, period_ms, disp_regs, q):
     while True:
@@ -168,17 +171,6 @@ async def read_DAQ(channel, period_ms, disp_regs, q):
 #        await q.put(reading)
         await asyncio.sleep_ms(period_ms)
 
-#async def update_voltage1(q):
-#    while True:
-#        value = await q.get()
-#        disp_regs1['voltage'] = (True, value)
-#        print(value)
-
-#async def update_voltage2(q):
-#    while True:
-#        value = await q.get()
-#        disp_regs2['voltage'] = (True, value)
-#        print(value)
 
 async def main():
     # Set up thread safe queue for displays and tasks
@@ -188,15 +180,8 @@ async def main():
     # set up reading ADC for light measurement
     asyncio.create_task(read_adc(1, 3, disp1_to_core2, disp2_to_core2))
     # set up reading ADCs for DAQ input
-#    q1 = Queue()
-#    q2 = Queue()
-#    asyncio.create_task(read_DAQ(2, 100, q1))
-#    asyncio.create_task(read_DAQ(0, 100, q2))
-#    asyncio.create_task(update_voltage1(q1))
-#    asyncio.create_task(update_voltage2(q2))
     asyncio.create_task(read_DAQ(2, 100, disp_regs1, disp1_to_core2))
     asyncio.create_task(read_DAQ(0, 100, disp_regs2, disp2_to_core2))
-#    asyncio.create_task(read_DAQ(0, 100))
     # set up button presses
     short_press1 = pb1.release_func(_short_press1, ())
     double_press1 = pb1.double_func(_double_press1, ())
@@ -208,18 +193,28 @@ async def main():
     enc1 = Encoder(px1, py1, div=4, v=0, vmin=0, vmax=9, wrap=True, callback=cb1)
     enc2 = Encoder(px2, py2, div=4, v=0, vmin=0, vmax=9, wrap=True, callback=cb2)
     # set up switches
-    sw1 = Switch(Pin(10, Pin.IN))	#GP6 = Enc 2, GP10 = Enc 1
+    _sw1 = Pin(10, Pin.IN)
+    sw1 = Switch(_sw1)	#GP6 = Enc 2, GP10 = Enc 1
+    if _sw1.value():
+        disp_regs1['mode'] = (True, 0)
+    else:
+        disp_regs1['mode'] = (True, 2)
     sw1.close_func(None)  # Use event based interface
     sw1.open_func(None)
     switch_close1_task = asyncio.create_task(switch_close1(sw1.close))
     switch_open1_task = asyncio.create_task(switch_open1(sw1.open))
-    sw2 = Switch(Pin(6, Pin.IN))	#GP6 = Enc 2, GP10 = Enc 1
+    _sw2 = Pin(6, Pin.IN)
+    sw2 = Switch(_sw2)	#GP6 = Enc 2, GP10 = Enc 1
+    if _sw2.value():
+        disp_regs2['mode'] = (True, 0)
+    else:
+        disp_regs2['mode'] = (True, 2)
     sw2.close_func(None)  # Use event based interface
     sw2.open_func(None)
     switch_close2_task = asyncio.create_task(switch_close2(sw2.close))
     switch_open2_task = asyncio.create_task(switch_open2(sw2.open))
-    
-    
+    print(gc.mem_free())
+        
     while True:
         await asyncio.sleep(1)
 

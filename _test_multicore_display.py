@@ -64,7 +64,9 @@ def core_2(getq, putq):  # Run on core 2
     
     while True:
 #        print("in core2")
-        display1.regs = await getq.get(block=True) 
+        display1.regs = await getq.get(block=True)
+        
+#        display1.regs['interlock'] = (True, lux_volt)
 #        print("got a val")
         display1.update()
 #        sleep_ms(30)

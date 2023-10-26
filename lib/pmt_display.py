@@ -3,21 +3,26 @@ from picographics import PicoGraphics, DISPLAY_LCD_240X240, PEN_P8
 from primitives import Queue
 from machine import Pin, PWM
 
-class display:
-    registers = {
-        'status': (False, False),
-        'voltage': (0000, False),
-        'set_voltage': (False, 0000, 0),
-        'interlock': (False, 0000),
-        'set_interlock': (False, 0000, 0),
-        'mode': (False, 0)
-    }
+class display():
+  
+    def __init__(self):
+        
+        self.registers = {
+            'status': (False, False),
+            'voltage': (0000, False),
+            'set_voltage': (False, 0000, 0),
+            'interlock': (False, 0000),
+            'set_interlock': (False, 0000, 0),
+            'mode': (False, 0)
+        }
 
 class PmtDisplay():
   
     def __init__(self, cs, dc, sck, mosi, bl):
         
-        self.regs = display.registers
+        self.disp = display()
+        
+        self.regs = self.disp.registers
         
         self.pwm = PWM(Pin(bl), freq=2000, duty_u16=15000)
         spibus = SPIBus(cs=cs, dc=dc, sck=sck, mosi=mosi)

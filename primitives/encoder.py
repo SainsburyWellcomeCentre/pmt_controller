@@ -82,16 +82,18 @@ class Encoder:
                 continue  # No change
             lcv += dv  # lcv: divided value with limits/mod applied
             if wrap:
-                if lcv == vmin - 1:
-                    lcv = vmax
-                if lcv == vmax + 1:
-                    lcv = vmin
-            lcv = lcv if vmax is None else min(vmax, lcv)
-            lcv = lcv if vmin is None else max(vmin, lcv)
+                if lcv <= vmin - 1:
+                    lcv = vmax - (vmin - lcv) + 1
+                if lcv >= vmax + 1:
+                    lcv = vmin + (lcv - vmax) - 1
+            else:
+                lcv = lcv if vmax is None else min(vmax, lcv)
+                lcv = lcv if vmin is None else max(vmin, lcv)
             lcv = lcv if mod is None else lcv % mod
             self._cv = lcv  # update ._cv for .value() before CB.
             if lcv != plcv:
-                cb(lcv, lcv - plcv, *args)  # Run user CB in uasyncio context
+#                cb(lcv, lcv - plcv, *args)  # Run user CB in uasyncio context
+                cb(lcv, dv, *args)  # Run user CB in uasyncio context - return change in rotation vector
                 self._trig.set()  # Enable async iterator
             pcv = cv
             plcv = lcv

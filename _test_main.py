@@ -160,7 +160,11 @@ async def read_adc(channel, period_ms, q1, q2):
 async def read_DAQ(channel, period_ms, disp_regs, q):
     while True:
         adc = ADC(Pin(26+channel))
-        reading = min(adc.read_u16()>>3, 4095)
+        reading = adc.read_u16() #* 6.2 / 65536
+        reading = int(reading * 0.096) - 64
+#        print(reading)
+#        reading = int((reading * 6.2))>>16
+#        reading = (reading * 775)>>15
         disp_regs['voltage'] = (True, reading) 
         try:
             q.put_sync(disp_regs)

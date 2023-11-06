@@ -8,6 +8,7 @@ class PmtController():
     def __init__(self):
         
         self.registers = {
+            'state': (False, 0, 0, 0),
             'status': (False, False),
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),

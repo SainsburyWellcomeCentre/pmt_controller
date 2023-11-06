@@ -7,6 +7,7 @@ from pmt_display import PmtDisplay, PmtController
 from machine import ADC, I2C, Pin, PWM
 import mcp4725
 from primitives import Queue, Pushbutton, Encoder, Switch
+from asyncio import Event
 import gc
 
 pmt1 = PmtController()
@@ -30,6 +31,9 @@ pb2 = Pushbutton(btn2, suppress=True)
 px2 = Pin(2, Pin.IN, Pin.PULL_UP)	#GP2 = Enc 2, GP8 = Enc 1
 py2 = Pin(3, Pin.IN, Pin.PULL_UP)	#GP3 = Enc 2, GP9 = Enc 1
 
+pmt1_event = Event()
+pmt2_event = Event()
+
 # Callbacks for encoders
 def cb1(pos, delta):
     print("enc 1", pos, delta)
@@ -44,7 +48,10 @@ dac1 = mcp4725.MCP4725(i2c,address=const(0x61))
 dac2 = mcp4725.MCP4725(i2c)		# mcp4725.MCP4725(i2c,address=const(0x60))
 
 def _short_press1():
-    print("1:SHORT")
+#    global pmt1_regs
+#    print("1:SHORT")
+    pmt1_regs['state'] = (True, pmt1_regs['state'][1] + 1, 0, 0)
+    pmt1_event.set()
     
 def _double_press1():
     print("1:DOUBLE")
@@ -53,7 +60,9 @@ def _long_press1():
     print("1:LONG")
 
 def _short_press2():
-    print("2:SHORT")
+#    print("2:SHORT")
+    pmt2_regs['state'] = (True, pmt2_regs['state'][1] + 1, 0, 0)
+    pmt2_event.set()
     
 def _double_press2():
     print("2:DOUBLE")
@@ -157,7 +166,7 @@ async def read_adc(channel, period_ms, q1, q2):
         dac2.write_dac(reading)
         await asyncio.sleep_ms(period_ms)        
 
-async def read_DAQ(channel, period_ms, disp_regs, q):
+async def read_DAQ(channel, period_ms, pmt_regs, q):
     while True:
         adc = ADC(Pin(26+channel))
         reading = adc.read_u16() #* 6.2 / 65536
@@ -166,9 +175,9 @@ async def read_DAQ(channel, period_ms, disp_regs, q):
 #        reading = int((reading * 6.2))>>16
 #        reading = (reading * 775)>>15
 #        disp_regs['voltage'] = (True, reading, True) # x, x, True for now - update for PMT power status
-        disp_regs['voltage'] = (True, reading, pmt1_regs['status'][1])
+        pmt_regs['voltage'] = (True, reading, pmt_regs['status'][1])
         try:
-            q.put_sync(disp_regs)
+            q.put_sync(pmt_regs)
         except IndexError:
             pass
             # Queue is full
@@ -176,6 +185,14 @@ async def read_DAQ(channel, period_ms, disp_regs, q):
 #        await q.put(reading)
         await asyncio.sleep_ms(period_ms)
 
+async def state_machine(pmt_event, pmt_regs, q):
+    while True:
+        await pmt_event.wait()
+        pmt_event.clear()
+        print(pmt_regs['state'])
+        pmt_regs['state'] = (False, pmt_regs['state'][1], pmt_regs['state'][2], pmt_regs['state'][3])
+#        print(pmt_regs['state'])
+#        await asyncio.sleep(1)
 
 async def main():
     # Set up thread safe queue for displays and tasks
@@ -218,6 +235,10 @@ async def main():
     sw2.open_func(None)
     switch_close2_task = asyncio.create_task(switch_close2(sw2.close))
     switch_open2_task = asyncio.create_task(switch_open2(sw2.open))
+    
+    asyncio.create_task(state_machine(pmt1_event, pmt1_regs, pmt1_to_core2))
+    asyncio.create_task(state_machine(pmt2_event, pmt2_regs, pmt2_to_core2))
+    
     print(gc.mem_free())
         
     while True:

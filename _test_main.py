@@ -3,17 +3,17 @@ from threadsafe import ThreadSafeQueue
 import _thread
 from time import sleep_ms
 from micropython import const
-from pmt_display import PmtDisplay, display
+from pmt_display import PmtDisplay, PmtController
 from machine import ADC, I2C, Pin, PWM
 import mcp4725
 from primitives import Queue, Pushbutton, Encoder, Switch
 import gc
 
-disp1 = display()
-disp_regs1 = disp1.registers
+pmt1 = PmtController()
+pmt1_regs = pmt1.registers
 
-disp2 = display()
-disp_regs2 = disp2.registers
+pmt2 = PmtController()
+pmt2_regs = pmt2.registers
 
 pmt_enable1 = Pin(21, Pin.OUT)	#GP22 = Enc 2, GP21 = Enc 1
 pmt_enable1.off()
@@ -105,7 +105,7 @@ async def switch_close1(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 1 closed.")
-        disp_regs1['mode'] = (True, 2)
+        pmt1_regs['mode'] = (True, 2)
         # Omitted code runs each time the switch closes
 
 async def switch_open1(evt):
@@ -113,7 +113,7 @@ async def switch_open1(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 1 open.")
-        disp_regs1['mode'] = (True, 0)
+        pmt1_regs['mode'] = (True, 0)
         # Omitted code runs each time the switch closes
 
 async def switch_close2(evt):
@@ -121,7 +121,7 @@ async def switch_close2(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 2 closed.")
-        disp_regs2['mode'] = (True, 2)
+        pmt2_regs['mode'] = (True, 2)
         # Omitted code runs each time the switch closes
 
 async def switch_open2(evt):
@@ -129,26 +129,26 @@ async def switch_open2(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 2 open.")
-        disp_regs2['mode'] = (True, 0)
+        pmt2_regs['mode'] = (True, 0)
         # Omitted code runs each time the switch closes
 
 async def read_adc(channel, period_ms, q1, q2):
     while True:
         adc = ADC(Pin(26+channel))
         reading = min(adc.read_u16()>>3, 4095)        
-        disp_regs1['interlock'] = (True, reading)        
-        disp_regs2['interlock'] = (True, reading)
+        pmt1_regs['interlock'] = (True, reading)        
+        pmt2_regs['interlock'] = (True, reading)
         if reading < 2000:
-            disp_regs1['status'] = (True, True)
+            pmt1_regs['status'] = (True, True)
         else:
-            disp_regs1['status'] = (True, False)
+            pmt1_regs['status'] = (True, False)
         try:
-            q1.put_sync(disp_regs1)
+            q1.put_sync(pmt1_regs)
         except IndexError:
             pass
             # Queue is full
         try:
-            q2.put_sync(disp_regs2)
+            q2.put_sync(pmt2_regs)
         except IndexError:
             pass
             # Queue is full
@@ -178,14 +178,14 @@ async def read_DAQ(channel, period_ms, disp_regs, q):
 
 async def main():
     # Set up thread safe queue for displays and tasks
-    disp1_to_core2 = ThreadSafeQueue(disp_regs1)
-    disp2_to_core2 = ThreadSafeQueue(disp_regs2)
-    _thread.start_new_thread(core_2, (disp1_to_core2, disp2_to_core2))
+    pmt1_to_core2 = ThreadSafeQueue(pmt1_regs)
+    pmt2_to_core2 = ThreadSafeQueue(pmt2_regs)
+    _thread.start_new_thread(core_2, (pmt1_to_core2, pmt2_to_core2))
     # set up reading ADC for light measurement
-    asyncio.create_task(read_adc(1, 3, disp1_to_core2, disp2_to_core2))
+    asyncio.create_task(read_adc(1, 3, pmt1_to_core2, pmt2_to_core2))
     # set up reading ADCs for DAQ input
-    asyncio.create_task(read_DAQ(2, 100, disp_regs1, disp1_to_core2))
-    asyncio.create_task(read_DAQ(0, 100, disp_regs2, disp2_to_core2))
+    asyncio.create_task(read_DAQ(2, 100, pmt1_regs, pmt1_to_core2))
+    asyncio.create_task(read_DAQ(0, 100, pmt2_regs, pmt2_to_core2))
     # set up button presses
     short_press1 = pb1.release_func(_short_press1, ())
     double_press1 = pb1.double_func(_double_press1, ())
@@ -200,9 +200,9 @@ async def main():
     _sw1 = Pin(10, Pin.IN)
     sw1 = Switch(_sw1)	#GP6 = Enc 2, GP10 = Enc 1
     if _sw1.value():
-        disp_regs1['mode'] = (True, 0)
+        pmt1_regs['mode'] = (True, 0)
     else:
-        disp_regs1['mode'] = (True, 2)
+        pmt1_regs['mode'] = (True, 2)
     sw1.close_func(None)  # Use event based interface
     sw1.open_func(None)
     switch_close1_task = asyncio.create_task(switch_close1(sw1.close))
@@ -210,9 +210,9 @@ async def main():
     _sw2 = Pin(6, Pin.IN)
     sw2 = Switch(_sw2)	#GP6 = Enc 2, GP10 = Enc 1
     if _sw2.value():
-        disp_regs2['mode'] = (True, 0)
+        pmt2_regs['mode'] = (True, 0)
     else:
-        disp_regs2['mode'] = (True, 2)
+        pmt2_regs['mode'] = (True, 2)
     sw2.close_func(None)  # Use event based interface
     sw2.open_func(None)
     switch_close2_task = asyncio.create_task(switch_close2(sw2.close))

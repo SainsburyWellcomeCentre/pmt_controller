@@ -3,7 +3,7 @@ from picographics import PicoGraphics, DISPLAY_LCD_240X240, PEN_P8
 from primitives import Queue
 from machine import Pin, PWM
 
-class display():
+class PmtController():
   
     def __init__(self):
         
@@ -20,7 +20,7 @@ class PmtDisplay():
   
     def __init__(self, cs, dc, sck, mosi, bl):
         
-        self.disp = display()
+        self.disp = PmtController()
         
         self.regs = self.disp.registers
         
@@ -157,5 +157,5 @@ class PmtDisplay():
             self.update_user_mode()
             self.regs['mode'] = (False, self.regs['mode'][1])
         
-        self.regs_old = self.regs.copy()
+#        self.regs_old = self.regs.copy()
         self.display.update()

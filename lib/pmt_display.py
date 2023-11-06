@@ -9,7 +9,7 @@ class PmtController():
         
         self.registers = {
             'status': (False, False),
-            'voltage': (0000, False),
+            'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
             'interlock': (False, 0000),
             'set_interlock': (False, 0000, 0),
@@ -51,7 +51,7 @@ class PmtDisplay():
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(3)
         self.display.rectangle(0, 80, 240, 80)
-        if self.regs['voltage'][1]:
+        if self.regs['voltage'][2]:
             self.display.set_pen(self.RED)
         else:
             self.display.set_pen(self.WHITE)

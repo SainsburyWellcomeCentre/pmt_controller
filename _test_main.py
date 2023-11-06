@@ -165,7 +165,8 @@ async def read_DAQ(channel, period_ms, disp_regs, q):
 #        print(reading)
 #        reading = int((reading * 6.2))>>16
 #        reading = (reading * 775)>>15
-        disp_regs['voltage'] = (True, reading) 
+#        disp_regs['voltage'] = (True, reading, True) # x, x, True for now - update for PMT power status
+        disp_regs['voltage'] = (True, reading, pmt1_regs['status'][1])
         try:
             q.put_sync(disp_regs)
         except IndexError:

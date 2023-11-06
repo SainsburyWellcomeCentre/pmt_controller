@@ -9,11 +9,12 @@ class PmtController():
         
         self.registers = {
             'state': (False, 0, 0, 0),
-            'status': (False, False),
+            'pmt_status': (False, False),
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
             'interlock': (False, 0000),
-            'set_interlock': (False, 0000, 0),
+            'set_interlock': (False, 150, 0),
+            'interlock_status': (False, False),
             'mode': (False, 0)
         }
 
@@ -71,7 +72,10 @@ class PmtDisplay():
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(2)
         self.display.rectangle(121, 201, 119, 39)
-        self.display.set_pen(self.WHITE)
+        if self.regs['interlock_status'][1]:
+            self.display.set_pen(self.RED)
+        else:
+            self.display.set_pen(self.WHITE)
         self.display.text("{:04.0f}u".format(self.regs['interlock'][1]),130,221,scale=1)
         
     def set_interlock_level(self):
@@ -83,8 +87,8 @@ class PmtDisplay():
         self.display.rectangle(195-(self.regs['set_interlock'][2]*10), 233, 10, 2)
         self.display.rectangle(195-(self.regs['set_interlock'][2]*10), 203, 10, 2)  
         
-    def update_pmt_status(self):
-        if self.regs['status'][1]:
+    def update_pmt_pmt_status(self):
+        if self.regs['pmt_status'][1]:
             self.display.set_pen(self.BLACK)
             self.display.set_thickness(3)
             self.display.rectangle(0, 0, 240, 39)
@@ -149,10 +153,10 @@ class PmtDisplay():
         if self.regs['set_interlock'][0]:
             self.set_interlock_level()
             self.regs['set_interlock'] = (False, self.regs['set_interlock'][1], self.regs['set_interlock'][2])
-#        if self.regs['status'] != self.regs_old['status']:
-        if self.regs['status'][0]:
-            self.update_pmt_status()
-            self.regs['status'] = (False, self.regs['status'][1])
+#        if self.regs['pmt_status'] != self.regs_old['pmt_status']:
+        if self.regs['pmt_status'][0]:
+            self.update_pmt_pmt_status()
+            self.regs['pmt_status'] = (False, self.regs['pmt_status'][1])
 #        if self.regs['mode'] != self.regs_old['mode']:
         if self.regs['mode'][0]:
             self.update_user_mode()

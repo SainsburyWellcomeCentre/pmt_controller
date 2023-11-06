@@ -95,12 +95,12 @@ def core_2(q1, q2):  # Run on core 2
     
     display1.set_background()
     display1.regs['voltage'] = (True, 0, False)
-    display1.regs['status'] = (True, False)
+    display1.regs['pmt_status'] = (True, False)
     display1.update()
     
     display2.set_background()
     display2.regs['voltage'] = (True, 0, False)
-    display2.regs['status'] = (True, False)
+    display2.regs['pmt_status'] = (True, False)
     display2.update()
     
     while True:
@@ -141,16 +141,27 @@ async def switch_open2(evt):
         pmt2_regs['mode'] = (True, 0)
         # Omitted code runs each time the switch closes
 
-async def read_adc(channel, period_ms, q1, q2):
+async def read_adc(channel, period_ms, _pmt1_regs, _pmt2_regs, q1, q2):
     while True:
         adc = ADC(Pin(26+channel))
         reading = min(adc.read_u16()>>3, 4095)        
-        pmt1_regs['interlock'] = (True, reading)        
-        pmt2_regs['interlock'] = (True, reading)
-        if reading < 2000:
-            pmt1_regs['status'] = (True, True)
+        _pmt1_regs['interlock'] = (True, reading)        
+        _pmt2_regs['interlock'] = (True, reading)
+        
+        if reading < _pmt1_regs['set_interlock'][1]:
+            _pmt1_regs['interlock_status'] = (True, True)
         else:
-            pmt1_regs['status'] = (True, False)
+            pmt_enable1.off()
+            _pmt1_regs['interlock_status'] = (True, False)
+            _pmt1_regs['pmt_status'] = (True, False)
+        
+        if reading < _pmt2_regs['set_interlock'][1]:
+            _pmt2_regs['interlock_status'] = (True, True)
+        else:
+            pmt_enable2.off()
+            _pmt2_regs['interlock_status'] = (True, False)
+            _pmt2_regs['pmt_status'] = (True, False)
+            
         try:
             q1.put_sync(pmt1_regs)
         except IndexError:
@@ -162,8 +173,8 @@ async def read_adc(channel, period_ms, q1, q2):
             pass
             # Queue is full
          
-        dac1.write_dac(reading)
-        dac2.write_dac(reading)
+        dac1.write_dac(reading)	# just temp to test ext track
+        dac2.write_dac(reading)	# just temp to test ext track
         await asyncio.sleep_ms(period_ms)        
 
 async def read_DAQ(channel, period_ms, pmt_regs, q):
@@ -174,8 +185,8 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
 #        print(reading)
 #        reading = int((reading * 6.2))>>16
 #        reading = (reading * 775)>>15
-#        disp_regs['voltage'] = (True, reading, True) # x, x, True for now - update for PMT power status
-        pmt_regs['voltage'] = (True, reading, pmt_regs['status'][1])
+#        disp_regs['voltage'] = (True, reading, True) # x, x, True for now - update for PMT power pmt_status
+        pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][1])
         try:
             q.put_sync(pmt_regs)
         except IndexError:
@@ -200,7 +211,7 @@ async def main():
     pmt2_to_core2 = ThreadSafeQueue(pmt2_regs)
     _thread.start_new_thread(core_2, (pmt1_to_core2, pmt2_to_core2))
     # set up reading ADC for light measurement
-    asyncio.create_task(read_adc(1, 3, pmt1_to_core2, pmt2_to_core2))
+    asyncio.create_task(read_adc(1, 3, pmt1_regs, pmt2_regs, pmt1_to_core2, pmt2_to_core2))
     # set up reading ADCs for DAQ input
     asyncio.create_task(read_DAQ(2, 100, pmt1_regs, pmt1_to_core2))
     asyncio.create_task(read_DAQ(0, 100, pmt2_regs, pmt2_to_core2))

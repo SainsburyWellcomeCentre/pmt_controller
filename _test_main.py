@@ -50,7 +50,7 @@ dac2 = mcp4725.MCP4725(i2c)		# mcp4725.MCP4725(i2c,address=const(0x60))
 def _short_press1():
 #    global pmt1_regs
 #    print("1:SHORT")
-    pmt1_regs['state'] = (True, pmt1_regs['state'][1] + 1, 0, 0)
+    pmt1_regs['state'] = (True, pmt1_regs['state'][1], pmt1_regs['state'][2], pmt1_regs['state'][3], pmt1_regs['state'][4], pmt1_regs['state'][5] + 1, pmt1_regs['state'][6], pmt1_regs['state'][7])
     pmt1_event.set()
     
 def _double_press1():
@@ -61,7 +61,7 @@ def _long_press1():
 
 def _short_press2():
 #    print("2:SHORT")
-    pmt2_regs['state'] = (True, pmt2_regs['state'][1] + 1, 0, 0)
+    pmt2_regs['state'] = (True, pmt2_regs['state'][1], pmt2_regs['state'][2], pmt2_regs['state'][3], pmt2_regs['state'][4], pmt2_regs['state'][5] + 1, pmt2_regs['state'][6], pmt2_regs['state'][7])
     pmt2_event.set()
     
 def _double_press2():
@@ -201,7 +201,7 @@ async def state_machine(pmt_event, pmt_regs, q):
         await pmt_event.wait()
         pmt_event.clear()
         print(pmt_regs['state'])
-        pmt_regs['state'] = (False, pmt_regs['state'][1], pmt_regs['state'][2], pmt_regs['state'][3])
+        pmt_regs['state'] = (False, pmt_regs['state'][1], pmt_regs['state'][2], pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
 #        print(pmt_regs['state'])
 #        await asyncio.sleep(1)
 

@@ -8,7 +8,7 @@ class PmtController():
     def __init__(self):
         
         self.registers = {
-            'state': (False, 0, 0, 0),
+            'state': (False, False, False, 0, False, 0, 0, 0), # (short press, double press, long press, encoder, switch, state, set voltage state, set interlock state)
             'pmt_status': (False, False),
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
@@ -73,7 +73,7 @@ class PmtDisplay():
         self.display.set_thickness(2)
         self.display.rectangle(121, 201, 119, 39)
         if self.regs['interlock_status'][1]:
-            self.display.set_pen(self.RED)
+            self.display.set_pen(self.GREEN)
         else:
             self.display.set_pen(self.WHITE)
         self.display.text("{:04.0f}u".format(self.regs['interlock'][1]),130,221,scale=1)

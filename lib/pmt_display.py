@@ -8,6 +8,7 @@ class PmtController():
     def __init__(self):
         
         self.registers = {
+            'controller': (0),
             'state': (False, False, False, 0, False, 0, 0, 0), # (short press, double press, long press, encoder, switch, state, set voltage state, set interlock state)
             'pmt_status': (False, False),
             'voltage': (False, 0000, False),

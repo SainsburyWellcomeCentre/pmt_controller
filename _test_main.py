@@ -12,9 +12,11 @@ import gc
 
 pmt1 = PmtController()
 pmt1_regs = pmt1.registers
+pmt1_regs['controller'] = 1
 
 pmt2 = PmtController()
 pmt2_regs = pmt2.registers
+pmt2_regs['controller'] = 2
 
 pmt_enable1 = Pin(21, Pin.OUT)	#GP22 = Enc 2, GP21 = Enc 1
 pmt_enable1.off()
@@ -54,10 +56,14 @@ def _short_press1():
     pmt1_event.set()
     
 def _double_press1():
-    print("1:DOUBLE")
+#    print("1:DOUBLE")
+    pmt1_regs['state'] = (pmt1_regs['state'][0], True, pmt1_regs['state'][2], pmt1_regs['state'][3], pmt1_regs['state'][4], pmt1_regs['state'][5], pmt1_regs['state'][6], pmt1_regs['state'][7])
+    pmt1_event.set()
     
 def _long_press1():
-    print("1:LONG")
+#    print("1:LONG")
+    pmt1_regs['state'] = (pmt1_regs['state'][0], pmt1_regs['state'][1], True, pmt1_regs['state'][3], pmt1_regs['state'][4], pmt1_regs['state'][5], pmt1_regs['state'][6], pmt1_regs['state'][7])
+    pmt1_event.set()
 
 def _short_press2():
 #    print("2:SHORT")
@@ -65,10 +71,14 @@ def _short_press2():
     pmt2_event.set()
     
 def _double_press2():
-    print("2:DOUBLE")
+#    print("2:DOUBLE")
+    pmt2_regs['state'] = (pmt2_regs['state'][0], True, pmt2_regs['state'][2], pmt2_regs['state'][3], pmt2_regs['state'][4], pmt2_regs['state'][5], pmt2_regs['state'][6], pmt2_regs['state'][7])
+    pmt2_event.set()
     
 def _long_press2():
-    print("2:LONG")
+#    print("2:LONG")
+    pmt2_regs['state'] = (pmt2_regs['state'][0], pmt2_regs['state'][1], True, pmt2_regs['state'][3], pmt2_regs['state'][4], pmt2_regs['state'][5], pmt2_regs['state'][6], pmt2_regs['state'][7])
+    pmt2_event.set()
 
 def get_pos_nums(num):
     pos_nums = [0, 0, 0, 0]
@@ -201,7 +211,18 @@ async def state_machine(pmt_event, pmt_regs, q):
         await pmt_event.wait()
         pmt_event.clear()
         print(pmt_regs['state'])
-        pmt_regs['state'] = (False, pmt_regs['state'][1], pmt_regs['state'][2], pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
+        if pmt_regs['state'][0]:
+            pmt_regs['state'] = (False, pmt_regs['state'][1], pmt_regs['state'][2], pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
+            print(pmt_regs['controller'], pmt_regs['state'][5])
+
+        if pmt_regs['state'][1]:
+            pmt_regs['state'] = (pmt_regs['state'][0], False, pmt_regs['state'][2], pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
+            print(pmt_regs['controller'], 'double')
+
+        if pmt_regs['state'][2]:
+            pmt_regs['state'] = (pmt_regs['state'][0], pmt_regs['state'][1], False, pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
+            print(pmt_regs['controller'], 'long')
+            
 #        print(pmt_regs['state'])
 #        await asyncio.sleep(1)
 

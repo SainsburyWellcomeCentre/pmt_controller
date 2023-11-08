@@ -7,8 +7,6 @@ from pmt_display import PmtDisplay, PmtController
 from machine import ADC, I2C, Pin, PWM
 import mcp4725
 from primitives import Queue, Pushbutton, Encoder, Switch
-from asyncio import Event
-import gc
 
 pmt1 = PmtController()
 pmt1_regs = pmt1.registers
@@ -33,12 +31,14 @@ pb2 = Pushbutton(btn2, suppress=True)
 px2 = Pin(2, Pin.IN, Pin.PULL_UP)	#GP2 = Enc 2, GP8 = Enc 1
 py2 = Pin(3, Pin.IN, Pin.PULL_UP)	#GP3 = Enc 2, GP9 = Enc 1
 
-pmt1_event = Event()
-pmt2_event = Event()
-
 # Callbacks for encoders
 def cb1(pos, delta):
-    print("enc 1", pos, delta)
+#    print("enc 1", pos, delta)
+    if pmt1_regs['state'][1] == 2:
+        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
+        interlock_val = pmt1_regs['set_interlock'][1] + (delta * pow(10, pmt1_regs['set_interlock'][2]))
+        pmt1_regs['set_interlock'] = (True, interlock_val, pmt1_regs['set_interlock'][2])
+        
 
 def cb2(pos, delta):
     print("enc 2", pos, delta)
@@ -50,54 +50,53 @@ dac1 = mcp4725.MCP4725(i2c,address=const(0x61))
 dac2 = mcp4725.MCP4725(i2c)		# mcp4725.MCP4725(i2c,address=const(0x60))
 
 def _short_press1():
-#    global pmt1_regs
 #    print("1:SHORT")
-    pmt1_regs['state'] = (True, pmt1_regs['state'][1], pmt1_regs['state'][2], pmt1_regs['state'][3], pmt1_regs['state'][4], pmt1_regs['state'][5] + 1, pmt1_regs['state'][6], pmt1_regs['state'][7])
-    pmt1_event.set()
+    if not pmt1_regs['state'][2]:
+        state = pmt1_regs['state'][1] + 1
+        if state > 4:
+            state = 0            
+        elif state < 0:
+            state = 4    
+        pmt1_regs['state'] = (True, state, pmt1_regs['state'][2])
+        
+    print(pmt1_regs['controller'], pmt1_regs['state'])
     
 def _double_press1():
 #    print("1:DOUBLE")
-    pmt1_regs['state'] = (pmt1_regs['state'][0], True, pmt1_regs['state'][2], pmt1_regs['state'][3], pmt1_regs['state'][4], pmt1_regs['state'][5], pmt1_regs['state'][6], pmt1_regs['state'][7])
-    pmt1_event.set()
-    
+#    pmt1_regs['state'] = (pmt1_regs['state'][0], True)
+    if pmt1_regs['state'][1] == 2:
+        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
+        interlock_dec = pmt1_regs['set_interlock'][2] + 1
+        if interlock_dec > 3:
+            interlock_dec = 0            
+        elif interlock_dec < 0:
+            interlock_dec = 3   
+        pmt1_regs['set_interlock'] = (True, pmt1_regs['set_interlock'][1], interlock_dec)
+        print(pmt1_regs['controller'], pmt1_regs['state'], pmt1_regs['set_interlock'])
+    elif pmt1_regs['state'][1] == 4:
+        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
+        voltage_dec = pmt1_regs['set_voltage'][2] + 1
+        if voltage_dec > 3:
+            voltage_dec = 0            
+        elif voltage_dec < 0:
+            voltage_dec = 3   
+        pmt1_regs['set_voltage'] = (True, pmt1_regs['set_voltage'][1], voltage_dec)
+        print(pmt1_regs['controller'], pmt1_regs['state'], pmt1_regs['set_voltage'])
+        
 def _long_press1():
 #    print("1:LONG")
-    pmt1_regs['state'] = (pmt1_regs['state'][0], pmt1_regs['state'][1], True, pmt1_regs['state'][3], pmt1_regs['state'][4], pmt1_regs['state'][5], pmt1_regs['state'][6], pmt1_regs['state'][7])
-    pmt1_event.set()
+#    pmt1_regs['state'] = (True, pmt1_regs['state'][1], False) # this keeps the existing state which means the rotary switch can still modify the values
+    pmt1_regs['state'] = (True, 0, False)	# reset the state to the void state
+    print(pmt1_regs['controller'], pmt1_regs['state'])
 
 def _short_press2():
-#    print("2:SHORT")
-    pmt2_regs['state'] = (True, pmt2_regs['state'][1], pmt2_regs['state'][2], pmt2_regs['state'][3], pmt2_regs['state'][4], pmt2_regs['state'][5] + 1, pmt2_regs['state'][6], pmt2_regs['state'][7])
-    pmt2_event.set()
+    print("2:SHORT")
     
 def _double_press2():
-#    print("2:DOUBLE")
-    pmt2_regs['state'] = (pmt2_regs['state'][0], True, pmt2_regs['state'][2], pmt2_regs['state'][3], pmt2_regs['state'][4], pmt2_regs['state'][5], pmt2_regs['state'][6], pmt2_regs['state'][7])
-    pmt2_event.set()
+    print("2:DOUBLE")
     
 def _long_press2():
-#    print("2:LONG")
-    pmt2_regs['state'] = (pmt2_regs['state'][0], pmt2_regs['state'][1], True, pmt2_regs['state'][3], pmt2_regs['state'][4], pmt2_regs['state'][5], pmt2_regs['state'][6], pmt2_regs['state'][7])
-    pmt2_event.set()
-
-def get_pos_nums(num):
-    pos_nums = [0, 0, 0, 0]
-    i = 0
-    while num != 0:
-        pos_nums[i] = (num % 10)
-        num = num // 10
-        i = i + 1
-    return pos_nums
-
-def get_num(pos_nums):
-    if len(pos_nums) == 1:
-        return pos_nums[0]
-    elif len(pos_nums) == 2:
-        return pos_nums[0] + 10 * pos_nums[1]
-    elif len(pos_nums) == 3:
-        return pos_nums[0] + 10 * pos_nums[1] + 100 * pos_nums[2]
-    elif len(pos_nums) == 4:
-        return pos_nums[0] + 10 * pos_nums[1] + 100 * pos_nums[2] + 1000 * pos_nums[3]
+    print("2:LONG")
 
 def core_2(q1, q2):  # Run on core 2
     display1 = PmtDisplay(cs=13, dc=11, sck=14, mosi=15, bl=20)
@@ -125,7 +124,6 @@ async def switch_close1(evt):
         await evt.wait()  # minimal resources used while paused
         print("Switch 1 closed.")
         pmt1_regs['mode'] = (True, 2)
-        # Omitted code runs each time the switch closes
 
 async def switch_open1(evt):
     while True:
@@ -133,7 +131,6 @@ async def switch_open1(evt):
         await evt.wait()  # minimal resources used while paused
         print("Switch 1 open.")
         pmt1_regs['mode'] = (True, 0)
-        # Omitted code runs each time the switch closes
 
 async def switch_close2(evt):
     while True:
@@ -141,7 +138,6 @@ async def switch_close2(evt):
         await evt.wait()  # minimal resources used while paused
         print("Switch 2 closed.")
         pmt2_regs['mode'] = (True, 2)
-        # Omitted code runs each time the switch closes
 
 async def switch_open2(evt):
     while True:
@@ -149,7 +145,6 @@ async def switch_open2(evt):
         await evt.wait()  # minimal resources used while paused
         print("Switch 2 open.")
         pmt2_regs['mode'] = (True, 0)
-        # Omitted code runs each time the switch closes
 
 async def read_adc(channel, period_ms, _pmt1_regs, _pmt2_regs, q1, q2):
     while True:
@@ -206,26 +201,6 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
 #        await q.put(reading)
         await asyncio.sleep_ms(period_ms)
 
-async def state_machine(pmt_event, pmt_regs, q):
-    while True:
-        await pmt_event.wait()
-        pmt_event.clear()
-        print(pmt_regs['state'])
-        if pmt_regs['state'][0]:
-            pmt_regs['state'] = (False, pmt_regs['state'][1], pmt_regs['state'][2], pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
-            print(pmt_regs['controller'], pmt_regs['state'][5])
-
-        if pmt_regs['state'][1]:
-            pmt_regs['state'] = (pmt_regs['state'][0], False, pmt_regs['state'][2], pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
-            print(pmt_regs['controller'], 'double')
-
-        if pmt_regs['state'][2]:
-            pmt_regs['state'] = (pmt_regs['state'][0], pmt_regs['state'][1], False, pmt_regs['state'][3], pmt_regs['state'][4], pmt_regs['state'][5], pmt_regs['state'][6], pmt_regs['state'][7])
-            print(pmt_regs['controller'], 'long')
-            
-#        print(pmt_regs['state'])
-#        await asyncio.sleep(1)
-
 async def main():
     # Set up thread safe queue for displays and tasks
     pmt1_to_core2 = ThreadSafeQueue(pmt1_regs)
@@ -253,6 +228,7 @@ async def main():
         pmt1_regs['mode'] = (True, 0)
     else:
         pmt1_regs['mode'] = (True, 2)
+        
     sw1.close_func(None)  # Use event based interface
     sw1.open_func(None)
     switch_close1_task = asyncio.create_task(switch_close1(sw1.close))
@@ -261,18 +237,16 @@ async def main():
     sw2 = Switch(_sw2)	#GP6 = Enc 2, GP10 = Enc 1
     if _sw2.value():
         pmt2_regs['mode'] = (True, 0)
+        sw2_state = False
     else:
         pmt2_regs['mode'] = (True, 2)
+        sw2_state = True
+    
     sw2.close_func(None)  # Use event based interface
     sw2.open_func(None)
     switch_close2_task = asyncio.create_task(switch_close2(sw2.close))
     switch_open2_task = asyncio.create_task(switch_open2(sw2.open))
-    
-    asyncio.create_task(state_machine(pmt1_event, pmt1_regs, pmt1_to_core2))
-    asyncio.create_task(state_machine(pmt2_event, pmt2_regs, pmt2_to_core2))
-    
-    print(gc.mem_free())
-        
+         
     while True:
         await asyncio.sleep(1)
 

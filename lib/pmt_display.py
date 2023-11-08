@@ -9,7 +9,7 @@ class PmtController():
         
         self.registers = {
             'controller': (0),
-            'state': (False, False, False, 0, False, 0, 0, 0), # (short press, double press, long press, encoder, switch, state, set voltage state, set interlock state)
+            'state': (False, 0, False), # (0:update display, 1:state, 2:menu state)
             'pmt_status': (False, False),
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
@@ -147,11 +147,11 @@ class PmtDisplay():
             self.set_voltage()
             self.regs['set_voltage'] = (False, self.regs['set_voltage'][1], self.regs['set_voltage'][2])
 #        if self.regs['interlock'] != self.regs_old['interlock']:
-        if self.regs['interlock'][0]:
+        if self.regs['interlock'][0] and self.regs['state'][1] != 2:
             self.update_interlock_level()
             self.regs['interlock'] = (False, self.regs['interlock'][1])
 #        if self.regs['set_interlock'] != self.regs_old['set_interlock']:
-        if self.regs['set_interlock'][0]:
+        if self.regs['set_interlock'][0] and self.regs['state'][1] == 2:
             self.set_interlock_level()
             self.regs['set_interlock'] = (False, self.regs['set_interlock'][1], self.regs['set_interlock'][2])
 #        if self.regs['pmt_status'] != self.regs_old['pmt_status']:

@@ -10,13 +10,13 @@ class PmtController():
         self.registers = {
             'controller': (0),
             'state': (False, 0, False), # (0:update display, 1:state, 2:menu state)
-            'pmt_status': (False, False),
+            'pmt_status': (False, False, False),
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
             'interlock': (False, 0000),
             'set_interlock': (False, 150, 0),
             'interlock_status': (False, False),
-            'mode': (False, 0)
+            'mode': (False, 1)
         }
 
 class PmtDisplay():
@@ -66,8 +66,9 @@ class PmtDisplay():
         self.display.rectangle(0, 80, 240, 80)
         self.display.set_pen(self.BLUE)
         self.display.text("{:04.0f}V".format(self.regs['set_voltage'][1]),25,120,scale=2)
-        self.display.rectangle(150-(self.regs['set_voltage'][2]*40), 145, 30, 4)
-        self.display.rectangle(150-(self.regs['set_voltage'][2]*40), 85, 30, 4)
+        if self.regs['state'][1] == 4:
+            self.display.rectangle(150-(self.regs['set_voltage'][2]*40), 145, 30, 4)
+            self.display.rectangle(150-(self.regs['set_voltage'][2]*40), 85, 30, 4)
         
     def update_interlock_level(self):
         self.display.set_pen(self.BLACK)
@@ -139,11 +140,11 @@ class PmtDisplay():
         
     def update(self):
 #        if self.regs['voltage'] != self.regs_old['voltage']:
-        if self.regs['voltage'][0]:
+        if self.regs['voltage'][0] and self.regs['mode'][1] != 0:
             self.update_voltage()
             self.regs['voltage'] = (False, self.regs['voltage'][1])
 #        if self.regs['set_voltage'] != self.regs_old['set_voltage']:
-        if self.regs['set_voltage'][0]:
+        if self.regs['set_voltage'][0] and self.regs['mode'][1] == 0:
             self.set_voltage()
             self.regs['set_voltage'] = (False, self.regs['set_voltage'][1], self.regs['set_voltage'][2])
 #        if self.regs['interlock'] != self.regs_old['interlock']:

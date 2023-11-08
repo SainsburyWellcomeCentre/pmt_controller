@@ -8,6 +8,9 @@ from machine import ADC, I2C, Pin, PWM
 import mcp4725
 from primitives import Queue, Pushbutton, Encoder, Switch
 
+max_interlock_value = 500	# max value to set for the interlock trigger
+max_voltage_value = 1234 # change to 800
+
 pmt1 = PmtController()
 pmt1_regs = pmt1.registers
 pmt1_regs['controller'] = 1
@@ -34,10 +37,26 @@ py2 = Pin(3, Pin.IN, Pin.PULL_UP)	#GP3 = Enc 2, GP9 = Enc 1
 # Callbacks for encoders
 def cb1(pos, delta):
 #    print("enc 1", pos, delta)
+    if pmt1_regs['state'][1] == 1:
+        pass
     if pmt1_regs['state'][1] == 2:
         pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
         interlock_val = pmt1_regs['set_interlock'][1] + (delta * pow(10, pmt1_regs['set_interlock'][2]))
+        interlock_val = 0 if interlock_val < 0 else max_interlock_value if interlock_val > max_interlock_value else interlock_val
         pmt1_regs['set_interlock'] = (True, interlock_val, pmt1_regs['set_interlock'][2])
+    if pmt1_regs['state'][1] == 3:
+        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
+        if pmt1_regs['mode'][1] != 2:
+#            if pmt1_regs['mode'][1] == 0:
+            if delta > 0:
+                pmt1_regs['mode'] = (True, 1)
+            else:
+                pmt1_regs['mode'] = (True, 0)
+    if pmt1_regs['state'][1] == 4 and pmt1_regs['mode'][1] == 0:
+        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
+        voltage_val = pmt1_regs['set_voltage'][1] + (delta * pow(10, pmt1_regs['set_voltage'][2]))
+        voltage_val = 0 if voltage_val < 0 else max_voltage_value if voltage_val > max_voltage_value else voltage_val
+        pmt1_regs['set_voltage'] = (True, voltage_val, pmt1_regs['set_voltage'][2])
         
 
 def cb2(pos, delta):
@@ -86,6 +105,7 @@ def _double_press1():
 def _long_press1():
 #    print("1:LONG")
 #    pmt1_regs['state'] = (True, pmt1_regs['state'][1], False) # this keeps the existing state which means the rotary switch can still modify the values
+    print(pmt1_regs['controller'], pmt1_regs['state'])
     pmt1_regs['state'] = (True, 0, False)	# reset the state to the void state
     print(pmt1_regs['controller'], pmt1_regs['state'])
 
@@ -104,12 +124,12 @@ def core_2(q1, q2):  # Run on core 2
     
     display1.set_background()
     display1.regs['voltage'] = (True, 0, False)
-    display1.regs['pmt_status'] = (True, False)
+    display1.regs['pmt_status'] = (True, False, False)
     display1.update()
     
     display2.set_background()
     display2.regs['voltage'] = (True, 0, False)
-    display2.regs['pmt_status'] = (True, False)
+    display2.regs['pmt_status'] = (True, False, False)
     display2.update()
     
     while True:
@@ -130,7 +150,7 @@ async def switch_open1(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 1 open.")
-        pmt1_regs['mode'] = (True, 0)
+        pmt1_regs['mode'] = (True, 1)
 
 async def switch_close2(evt):
     while True:
@@ -144,7 +164,7 @@ async def switch_open2(evt):
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
         print("Switch 2 open.")
-        pmt2_regs['mode'] = (True, 0)
+        pmt2_regs['mode'] = (True, 1)
 
 async def read_adc(channel, period_ms, _pmt1_regs, _pmt2_regs, q1, q2):
     while True:
@@ -158,14 +178,14 @@ async def read_adc(channel, period_ms, _pmt1_regs, _pmt2_regs, q1, q2):
         else:
             pmt_enable1.off()
             _pmt1_regs['interlock_status'] = (True, False)
-            _pmt1_regs['pmt_status'] = (True, False)
+            _pmt1_regs['pmt_status'] = (True, False, False)
         
         if reading < _pmt2_regs['set_interlock'][1]:
             _pmt2_regs['interlock_status'] = (True, True)
         else:
             pmt_enable2.off()
             _pmt2_regs['interlock_status'] = (True, False)
-            _pmt2_regs['pmt_status'] = (True, False)
+            _pmt2_regs['pmt_status'] = (True, False, False)
             
         try:
             q1.put_sync(pmt1_regs)
@@ -191,7 +211,10 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
 #        reading = int((reading * 6.2))>>16
 #        reading = (reading * 775)>>15
 #        disp_regs['voltage'] = (True, reading, True) # x, x, True for now - update for PMT power pmt_status
-        pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][1])
+        if pmt_regs['mode'][1] != 0:
+            pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][1])
+        else:
+            pmt_regs['set_voltage'] = (True, pmt_regs['set_voltage'][1], pmt_regs['set_voltage'][2])
         try:
             q.put_sync(pmt_regs)
         except IndexError:
@@ -225,7 +248,7 @@ async def main():
     _sw1 = Pin(10, Pin.IN)
     sw1 = Switch(_sw1)	#GP6 = Enc 2, GP10 = Enc 1
     if _sw1.value():
-        pmt1_regs['mode'] = (True, 0)
+        pmt1_regs['mode'] = (True, 1)
     else:
         pmt1_regs['mode'] = (True, 2)
         
@@ -236,7 +259,7 @@ async def main():
     _sw2 = Pin(6, Pin.IN)
     sw2 = Switch(_sw2)	#GP6 = Enc 2, GP10 = Enc 1
     if _sw2.value():
-        pmt2_regs['mode'] = (True, 0)
+        pmt2_regs['mode'] = (True, 1)
         sw2_state = False
     else:
         pmt2_regs['mode'] = (True, 2)

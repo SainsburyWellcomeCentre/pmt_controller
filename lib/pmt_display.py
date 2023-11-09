@@ -57,14 +57,22 @@ class PmtDisplay():
         if self.regs['voltage'][2]:
             self.display.set_pen(self.RED)
         else:
-            self.display.set_pen(self.WHITE)
+            if self.regs['mode'][1] == 1:
+                self.display.set_pen(self.GREEN)
+            else:
+                self.display.set_pen(self.WHITE)
         self.display.text("{:04.0f}V".format(self.regs['voltage'][1]),25,120,scale=2)
         
     def set_voltage(self):
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(3)
         self.display.rectangle(0, 80, 240, 80)
-        self.display.set_pen(self.BLUE)
+        if self.regs['mode'][1] == 0:
+            self.display.set_pen(self.RED)
+        else:
+            self.display.set_pen(self.GREEN)
+        
+#        self.display.set_pen(self.RED)
         self.display.text("{:04.0f}V".format(self.regs['set_voltage'][1]),25,120,scale=2)
         if self.regs['state'][1] == 4:
             self.display.rectangle(150-(self.regs['set_voltage'][2]*40), 145, 30, 4)
@@ -119,14 +127,14 @@ class PmtDisplay():
             self.display.set_pen(self.BLACK)
             self.display.set_thickness(2)
             self.display.rectangle(0, 201, 119, 39)
-            self.display.set_pen(self.BLUE)
+            self.display.set_pen(self.GREEN)
             self.display.text("TRACK", 15, 221, scale=1)
             self.display.update()
         else:
             self.display.set_pen(self.BLACK)
             self.display.set_thickness(2)
             self.display.rectangle(0, 201, 119, 39)
-            self.display.set_pen(self.BLUE)
+            self.display.set_pen(self.WHITE)
             self.display.text("EXT", 40, 221, scale=1)
             self.display.update()
 

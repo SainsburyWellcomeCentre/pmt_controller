@@ -73,17 +73,22 @@ def _short_press1():
 #    print("1:SHORT")
     if not pmt1_regs['state'][2]:
         state = pmt1_regs['state'][1] + 1
-        if state > 4:
-            state = 0            
-        elif state < 0:
-            state = 4    
-        pmt1_regs['state'] = (True, state, pmt1_regs['state'][2])
+#        if state > 4:
+#            state = 0            
+#        elif state < 0:
+#            state = 4    
+#        pmt1_regs['state'] = (True, state, pmt1_regs['state'][2])
         if state == 1:
             pass
         elif state == 2:
-            pass
+            pmt1_regs['set_interlock'] = (True, pmt1_regs['set_interlock'][1], pmt1_regs['set_interlock'][2])
         elif state == 3:
             pass
+        elif state == 4:
+            pass
+        else:
+            state = 0
+        pmt1_regs['state'] = (True, state, pmt1_regs['state'][2])
         
     print(pmt1_regs['controller'], pmt1_regs['state'])
     

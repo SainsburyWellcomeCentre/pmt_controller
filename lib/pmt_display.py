@@ -10,7 +10,7 @@ class PmtController():
         self.registers = {
             'controller': (0),
             'state': (False, 0, False), # (0:update display, 1:state, 2:menu state)
-            'pmt_status': (False, False, False),
+            'pmt_status': (False, False, False), # (0:update display, 1:pmt state - on/ off, 2:write pmt state)
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
             'interlock': (False, 0000),
@@ -34,9 +34,9 @@ class PmtDisplay():
 
         self.BLACK = self.display.create_pen(0, 0, 0)
         self.WHITE = self.display.create_pen(255, 255, 255)
-        self.RED = self.display.create_pen(255, 0, 0)
-        self.GREEN = self.display.create_pen(0, 255, 0)
-        self.BLUE = self.display.create_pen(0, 0, 255)
+        self.RED = self.display.create_pen(200, 0, 0)
+        self.GREEN = self.display.create_pen(0, 200, 0)
+        self.BLUE = self.display.create_pen(0, 0, 200)
         self.GREY = self.display.create_pen(200, 200, 200)
         self.LIGHT_GREY = self.display.create_pen(100, 100, 100)
         
@@ -73,6 +73,10 @@ class PmtDisplay():
     def update_interlock_level(self):
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(2)
+#        if self.regs['state'][1] == 2:
+#            self.display.set_thickness(4)
+#        else:
+#            self.display.set_thickness(2)
         self.display.rectangle(121, 201, 119, 39)
         if self.regs['interlock_status'][1]:
             self.display.set_pen(self.GREEN)

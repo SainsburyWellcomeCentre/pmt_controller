@@ -38,6 +38,7 @@ py2 = Pin(3, Pin.IN, Pin.PULL_UP)	#GP3 = Enc 2, GP9 = Enc 1
 def cb1(pos, delta):
 #    print("enc 1", pos, delta)
     if pmt1_regs['state'][1] == 1:
+        
         pass
     if pmt1_regs['state'][1] == 2:
         pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
@@ -77,6 +78,12 @@ def _short_press1():
         elif state < 0:
             state = 4    
         pmt1_regs['state'] = (True, state, pmt1_regs['state'][2])
+        if state == 1:
+            pass
+        elif state == 2:
+            pass
+        elif state == 3:
+            pass
         
     print(pmt1_regs['controller'], pmt1_regs['state'])
     

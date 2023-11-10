@@ -35,33 +35,36 @@ px2 = Pin(2, Pin.IN, Pin.PULL_UP)	#GP2 = Enc 2, GP8 = Enc 1
 py2 = Pin(3, Pin.IN, Pin.PULL_UP)	#GP3 = Enc 2, GP9 = Enc 1
 
 # Callbacks for encoders
-def cb1(pos, delta):
+def cb(delta, pmt_regs):
 #    print("enc 1", pos, delta)
-    if pmt1_regs['state'][1] == 1:
+    if pmt_regs['state'][1] == 1:
         
         pass
-    if pmt1_regs['state'][1] == 2:
-        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
-        interlock_val = pmt1_regs['set_interlock'][1] + (delta * pow(10, pmt1_regs['set_interlock'][2]))
+    if pmt_regs['state'][1] == 2:
+        pmt_regs['state'] = (True, pmt_regs['state'][1], True)
+        interlock_val = pmt_regs['set_interlock'][1] + (delta * pow(10, pmt_regs['set_interlock'][2]))
         interlock_val = 0 if interlock_val < 0 else max_interlock_value if interlock_val > max_interlock_value else interlock_val
-        pmt1_regs['set_interlock'] = (True, interlock_val, pmt1_regs['set_interlock'][2])
-    if pmt1_regs['state'][1] == 3:
-        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
-        if pmt1_regs['mode'][1] != 2:
-#            if pmt1_regs['mode'][1] == 0:
+        pmt_regs['set_interlock'] = (True, interlock_val, pmt_regs['set_interlock'][2])
+    if pmt_regs['state'][1] == 3:
+        pmt_regs['state'] = (True, pmt_regs['state'][1], True)
+        if pmt_regs['mode'][1] != 2:
+#            if pmt_regs['mode'][1] == 0:
             if delta > 0:
-                pmt1_regs['mode'] = (True, 1)
+                pmt_regs['mode'] = (True, 1)
             else:
-                pmt1_regs['mode'] = (True, 0)
-    if pmt1_regs['state'][1] == 4 and pmt1_regs['mode'][1] == 0:
-        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
-        voltage_val = pmt1_regs['set_voltage'][1] + (delta * pow(10, pmt1_regs['set_voltage'][2]))
+                pmt_regs['mode'] = (True, 0)
+    if pmt_regs['state'][1] == 4 and pmt_regs['mode'][1] == 0:
+        pmt_regs['state'] = (True, pmt_regs['state'][1], True)
+        voltage_val = pmt_regs['set_voltage'][1] + (delta * pow(10, pmt_regs['set_voltage'][2]))
         voltage_val = 0 if voltage_val < 0 else max_voltage_value if voltage_val > max_voltage_value else voltage_val
-        pmt1_regs['set_voltage'] = (True, voltage_val, pmt1_regs['set_voltage'][2])
-        
+        pmt_regs['set_voltage'] = (True, voltage_val, pmt_regs['set_voltage'][2])
 
+
+def cb1(pos, delta):
+    cb(delta, pmt1_regs)
+        
 def cb2(pos, delta):
-    print("enc 2", pos, delta)
+    cb(delta, pmt2_regs)
 
 # i2c for DACs
 i2c = I2C(0, scl=Pin(5), sda=Pin(4), freq=400000)
@@ -69,66 +72,73 @@ i2c = I2C(0, scl=Pin(5), sda=Pin(4), freq=400000)
 dac1 = mcp4725.MCP4725(i2c,address=const(0x61))
 dac2 = mcp4725.MCP4725(i2c)		# mcp4725.MCP4725(i2c,address=const(0x60))
 
-def _short_press1():
-#    print("1:SHORT")
-    if not pmt1_regs['state'][2]:
-        state = pmt1_regs['state'][1] + 1
-#        if state > 4:
-#            state = 0            
-#        elif state < 0:
-#            state = 4    
-#        pmt1_regs['state'] = (True, state, pmt1_regs['state'][2])
-        if state == 1:
+def short_press(pmt_regs):
+    if not pmt_regs['state'][2]:
+        pmt_regs['state'] = (pmt_regs['state'][0], pmt_regs['state'][1] + 1, pmt_regs['state'][2])
+        if pmt_regs['state'][1] == 1:
             pass
-        elif state == 2:
-            pmt1_regs['set_interlock'] = (True, pmt1_regs['set_interlock'][1], pmt1_regs['set_interlock'][2])
-        elif state == 3:
-            pass
-        elif state == 4:
-            pass
+        elif pmt_regs['state'][1] == 2:
+            pmt_regs['set_interlock'] = (True, pmt_regs['set_interlock'][1], pmt_regs['set_interlock'][2])
+        elif pmt_regs['state'][1] == 3:
+            pmt_regs['mode'] = (True, pmt_regs['mode'][1])
+        elif pmt_regs['state'][1] == 4:
+            pmt_regs['mode'] = (True, pmt_regs['mode'][1])
+            if pmt_regs['mode'][1] != 0:
+                pmt_regs['state'] = (pmt_regs['state'][0], 0, pmt_regs['state'][2])
         else:
-            state = 0
-        pmt1_regs['state'] = (True, state, pmt1_regs['state'][2])
+            pmt_regs['state'] = (pmt_regs['state'][0], 0, pmt_regs['state'][2])
+        pmt_regs['state'] = (True, pmt_regs['state'][1], pmt_regs['state'][2])
         
-    print(pmt1_regs['controller'], pmt1_regs['state'])
+#    print(pmt_regs['controller'], pmt_regs['state'])
+
+def double_press(pmt_regs):
+    if pmt_regs['state'][1] == 2:
+        pmt_regs['state'] = (True, pmt_regs['state'][1], True)
+        interlock_dec = pmt_regs['set_interlock'][2] + 1
+        if interlock_dec > 3:
+            interlock_dec = 0
+        pmt_regs['set_interlock'] = (True, pmt_regs['set_interlock'][1], interlock_dec)
+#        print(pmt_regs['controller'], pmt_regs['state'], pmt_regs['set_interlock'])
+    elif pmt_regs['state'][1] == 4 and pmt_regs['mode'][1] == 0:
+        pmt_regs['state'] = (True, pmt_regs['state'][1], True)
+        voltage_dec = pmt_regs['set_voltage'][2] + 1
+        if voltage_dec > 3:
+            voltage_dec = 0  
+        pmt_regs['set_voltage'] = (True, pmt_regs['set_voltage'][1], voltage_dec)
+#        print(pmt_regs['controller'], pmt_regs['state'], pmt_regs['set_voltage'])
+
+def long_press(pmt_regs):
+#    print(pmt_regs['controller'], pmt_regs['state'])
+    if pmt_regs['state'][1] == 1:
+        pmt_regs['state'] = (True, 0, False)
+    elif pmt_regs['state'][1] == 2:
+        pmt_regs['state'] = (True, 0, False)
+    elif pmt_regs['state'][1] == 3:
+        pmt_regs['mode'] = (True, pmt_regs['mode'][1])
+        if pmt_regs['mode'][1] == 0:
+            pmt_regs['state'] = (True, 4, False)
+        else:
+            pmt_regs['state'] = (True, 0, False)
+    elif pmt_regs['state'][1] == 4:
+        pmt_regs['state'] = (True, 0, False)
+
+def _short_press1():
+    short_press(pmt1_regs)
     
 def _double_press1():
-#    print("1:DOUBLE")
-#    pmt1_regs['state'] = (pmt1_regs['state'][0], True)
-    if pmt1_regs['state'][1] == 2:
-        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
-        interlock_dec = pmt1_regs['set_interlock'][2] + 1
-        if interlock_dec > 3:
-            interlock_dec = 0            
-        elif interlock_dec < 0:
-            interlock_dec = 3   
-        pmt1_regs['set_interlock'] = (True, pmt1_regs['set_interlock'][1], interlock_dec)
-        print(pmt1_regs['controller'], pmt1_regs['state'], pmt1_regs['set_interlock'])
-    elif pmt1_regs['state'][1] == 4:
-        pmt1_regs['state'] = (True, pmt1_regs['state'][1], True)
-        voltage_dec = pmt1_regs['set_voltage'][2] + 1
-        if voltage_dec > 3:
-            voltage_dec = 0            
-        elif voltage_dec < 0:
-            voltage_dec = 3   
-        pmt1_regs['set_voltage'] = (True, pmt1_regs['set_voltage'][1], voltage_dec)
-        print(pmt1_regs['controller'], pmt1_regs['state'], pmt1_regs['set_voltage'])
+    double_press(pmt1_regs)        
         
 def _long_press1():
-#    print("1:LONG")
-#    pmt1_regs['state'] = (True, pmt1_regs['state'][1], False) # this keeps the existing state which means the rotary switch can still modify the values
-    print(pmt1_regs['controller'], pmt1_regs['state'])
-    pmt1_regs['state'] = (True, 0, False)	# reset the state to the void state
-    print(pmt1_regs['controller'], pmt1_regs['state'])
+    long_press(pmt1_regs)
 
 def _short_press2():
-    print("2:SHORT")
+    short_press(pmt2_regs)
     
 def _double_press2():
-    print("2:DOUBLE")
+    double_press(pmt2_regs) 
     
 def _long_press2():
-    print("2:LONG")
+    long_press(pmt2_regs)
 
 def core_2(q1, q2):  # Run on core 2
     display1 = PmtDisplay(cs=13, dc=11, sck=14, mosi=15, bl=20)
@@ -154,28 +164,28 @@ async def switch_close1(evt):
     while True:
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
-        print("Switch 1 closed.")
+#        print("Switch 1 closed.")
         pmt1_regs['mode'] = (True, 2)
 
 async def switch_open1(evt):
     while True:
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
-        print("Switch 1 open.")
+#        print("Switch 1 open.")
         pmt1_regs['mode'] = (True, 1)
 
 async def switch_close2(evt):
     while True:
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
-        print("Switch 2 closed.")
+#        print("Switch 2 closed.")
         pmt2_regs['mode'] = (True, 2)
 
 async def switch_open2(evt):
     while True:
         evt.clear()  # re-enable the event
         await evt.wait()  # minimal resources used while paused
-        print("Switch 2 open.")
+#        print("Switch 2 open.")
         pmt2_regs['mode'] = (True, 1)
 
 async def read_adc(channel, period_ms, _pmt1_regs, _pmt2_regs, q1, q2):

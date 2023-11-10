@@ -198,10 +198,10 @@ async def switch_open2(evt):
 #        print("Switch 2 open.")
         pmt2_regs['mode'] = (True, 1)
 
-async def read_adc(channel, period_ms, _pmt1_regs, _pmt2_regs, q1, q2):
+async def read_adc_interlock(channel, period_ms, _pmt1_regs, _pmt2_regs, q1, q2):
     while True:
         adc = ADC(Pin(26+channel))
-        reading = min(adc.read_u16()>>3, 4095)        
+        reading = min(adc.read_u16()>>3, 4095)
         _pmt1_regs['interlock'] = (True, reading)        
         _pmt2_regs['interlock'] = (True, reading)
         
@@ -239,6 +239,7 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
         adc = ADC(Pin(26+channel))
         reading = adc.read_u16() #* 6.2 / 65536
         reading = int(reading * 0.096) - 64
+        reading = 0 if reading <= 10 else reading
 #        print(reading)
 #        reading = int((reading * 6.2))>>16
 #        reading = (reading * 775)>>15
@@ -262,7 +263,7 @@ async def main():
     pmt2_to_core2 = ThreadSafeQueue(pmt2_regs)
     _thread.start_new_thread(core_2, (pmt1_to_core2, pmt2_to_core2))
     # set up reading ADC for light measurement
-    asyncio.create_task(read_adc(1, 3, pmt1_regs, pmt2_regs, pmt1_to_core2, pmt2_to_core2))
+    asyncio.create_task(read_adc_interlock(1, 3, pmt1_regs, pmt2_regs, pmt1_to_core2, pmt2_to_core2))
     # set up reading ADCs for DAQ input
     asyncio.create_task(read_DAQ(2, 100, pmt1_regs, pmt1_to_core2))
     asyncio.create_task(read_DAQ(0, 100, pmt2_regs, pmt2_to_core2))

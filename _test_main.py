@@ -36,10 +36,15 @@ py2 = Pin(3, Pin.IN, Pin.PULL_UP)	#GP3 = Enc 2, GP9 = Enc 1
 
 # Callbacks for encoders
 def cb(delta, pmt_regs):
-#    print("enc 1", pos, delta)
     if pmt_regs['state'][1] == 1:
+        pmt_regs['state'] = (True, pmt_regs['state'][1], True)
+#        print(pmt_regs['state'], delta, pmt_regs['pmt_status'])
+        if delta > 0:
+            pmt_regs['pmt_status'] = (True, True, False)
+        else:
+            pmt_regs['pmt_status'] = (True, False, False)
         
-        pass
+#        print(pmt_regs['state'], delta, pmt_regs['pmt_status'])
     if pmt_regs['state'][1] == 2:
         pmt_regs['state'] = (True, pmt_regs['state'][1], True)
         interlock_val = pmt_regs['set_interlock'][1] + (delta * pow(10, pmt_regs['set_interlock'][2]))
@@ -76,6 +81,7 @@ def short_press(pmt_regs):
     if not pmt_regs['state'][2]:
         pmt_regs['state'] = (pmt_regs['state'][0], pmt_regs['state'][1] + 1, pmt_regs['state'][2])
         if pmt_regs['state'][1] == 1:
+            pmt_regs['pmt_status'] = (True, pmt_regs['pmt_status'][1], pmt_regs['pmt_status'][2])
             pass
         elif pmt_regs['state'][1] == 2:
             pmt_regs['set_interlock'] = (True, pmt_regs['set_interlock'][1], pmt_regs['set_interlock'][2])
@@ -111,6 +117,10 @@ def long_press(pmt_regs):
 #    print(pmt_regs['controller'], pmt_regs['state'])
     if pmt_regs['state'][1] == 1:
         pmt_regs['state'] = (True, 0, False)
+        if pmt_regs['pmt_status'][1]:
+            pmt_regs['pmt_status'] = (True, True, True)
+        else:
+            pmt_regs['pmt_status'] = (True, False, False)
     elif pmt_regs['state'][1] == 2:
         pmt_regs['state'] = (True, 0, False)
     elif pmt_regs['state'][1] == 3:

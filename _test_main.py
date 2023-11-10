@@ -245,7 +245,7 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
 #        reading = (reading * 775)>>15
 #        disp_regs['voltage'] = (True, reading, True) # x, x, True for now - update for PMT power pmt_status
         if pmt_regs['mode'][1] != 0:
-            pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][1])
+            pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][2])
         else:
             pmt_regs['set_voltage'] = (True, pmt_regs['set_voltage'][1], pmt_regs['set_voltage'][2])
         try:

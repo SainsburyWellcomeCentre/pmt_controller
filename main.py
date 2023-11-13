@@ -82,11 +82,14 @@ def short_press(pmt_regs):
         pmt_regs['state'] = (pmt_regs['state'][0], pmt_regs['state'][1] + 1, pmt_regs['state'][2])
         if pmt_regs['state'][1] == 1:
             pmt_regs['pmt_status'] = (True, pmt_regs['pmt_status'][1], pmt_regs['pmt_status'][2])
-            pass
         elif pmt_regs['state'][1] == 2:
+            pmt_regs['pmt_status'] = (True, pmt_regs['pmt_status'][1], pmt_regs['pmt_status'][2])
             pmt_regs['set_interlock'] = (True, pmt_regs['set_interlock'][1], pmt_regs['set_interlock'][2])
         elif pmt_regs['state'][1] == 3:
-            pmt_regs['mode'] = (True, pmt_regs['mode'][1])
+            if pmt_regs['mode'][1] == 2:
+                pmt_regs['state'] = (pmt_regs['state'][0], 0, pmt_regs['state'][2])
+            else:
+                pmt_regs['mode'] = (True, pmt_regs['mode'][1])
         elif pmt_regs['state'][1] == 4:
             pmt_regs['mode'] = (True, pmt_regs['mode'][1])
             if pmt_regs['mode'][1] != 0:
@@ -118,7 +121,7 @@ def long_press(pmt_regs):
     if pmt_regs['state'][1] == 1:
         pmt_regs['state'] = (True, 0, False)
 #        if pmt_regs['pmt_status'][1]:
-        if pmt_regs['pmt_status'][1]:
+        if pmt_regs['pmt_status'][1] and pmt_regs['interlock_status'][1]:
             pmt_regs['pmt_status'] = (True, True, True)
         else:
             pmt_regs['pmt_status'] = (True, False, False)
@@ -128,6 +131,7 @@ def long_press(pmt_regs):
         pmt_regs['mode'] = (True, pmt_regs['mode'][1])
         if pmt_regs['mode'][1] == 0:
             pmt_regs['state'] = (True, 4, False)
+            pmt_regs['pmt_status'] = (True, pmt_regs['pmt_status'][1], False)		#####
         else:
             pmt_regs['state'] = (True, 0, False)
     elif pmt_regs['state'][1] == 4:
@@ -251,12 +255,16 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
                 reading = 0
             if pmt_regs['controller'] == 1:
                 dac1.write_dac(int(reading * 1.23))
-                pmt_enable1.on()
-#                dac1.write_dac(reading>>3)
+                if pmt_regs['pmt_status'][2]:
+                    pmt_enable1.on()
+                else:
+                    pmt_enable1.off()
             else:
                 dac2.write_dac(int(reading * 1.23))
-                pmt_enable2.on()
-#                dac2.write_dac(reading>>3)
+                if pmt_regs['pmt_status'][2]:
+                    pmt_enable2.on()
+                else:
+                    pmt_enable2.off()
         else:
             pmt_regs['set_voltage'] = (True, pmt_regs['set_voltage'][1], pmt_regs['set_voltage'][2])
             if not pmt_regs['pmt_status'][2]:
@@ -264,11 +272,17 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
             else:
                 reading = int(pmt_regs['set_voltage'][1] * 1.23)
             if pmt_regs['controller'] == 1:
-                dac1.write_dac(int(reading * 1.23))
-                pmt_enable1.on()
+                dac1.write_dac(reading)
+                if pmt_regs['pmt_status'][2]:
+                    pmt_enable1.on()
+                else:
+                    pmt_enable1.off()
             else:
-                dac2.write_dac(int(reading * 1.23))
-                pmt_enable2.on()
+                dac2.write_dac(reading)
+                if pmt_regs['pmt_status'][2]:
+                    pmt_enable2.on()
+                else:
+                    pmt_enable2.off()
         try:
             q.put_sync(pmt_regs)
         except IndexError:

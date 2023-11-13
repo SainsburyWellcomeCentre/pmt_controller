@@ -1,5 +1,5 @@
 from pimoroni_bus import SPIBus
-from picographics import PicoGraphics, DISPLAY_LCD_240X240, PEN_P8
+from picographics import PicoGraphics, DISPLAY_LCD_240X240, PEN_P4
 from primitives import Queue
 from machine import Pin, PWM
 
@@ -14,7 +14,7 @@ class PmtController():
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
             'interlock': (False, 0000),
-            'set_interlock': (False, 150, 0),
+            'set_interlock': (False, 1500, 0),
             'interlock_status': (False, False),
             'mode': (False, 1)
         }
@@ -30,7 +30,7 @@ class PmtDisplay():
         self.pwm = PWM(Pin(bl), freq=2000, duty_u16=15000)
         spibus = SPIBus(cs=cs, dc=dc, sck=sck, mosi=mosi)
         
-        self.display = PicoGraphics(display=DISPLAY_LCD_240X240, bus=spibus, pen_type=PEN_P8, rotate=90)
+        self.display = PicoGraphics(display=DISPLAY_LCD_240X240, bus=spibus, pen_type=PEN_P4, rotate=90)
 
         self.BLACK = self.display.create_pen(0, 0, 0)
         self.WHITE = self.display.create_pen(255, 255, 255)
@@ -56,7 +56,8 @@ class PmtDisplay():
         self.display.set_pen(self.BLACK)
         self.display.set_thickness(3)
         self.display.rectangle(0, 80, 240, 80)
-        if self.regs['voltage'][2]:
+#        if self.regs['voltage'][2]:
+        if self.regs['pmt_status'][2]:
             self.display.set_pen(self.RED)
         else:
             if self.regs['mode'][1] == 1:
@@ -73,6 +74,8 @@ class PmtDisplay():
             self.display.set_pen(self.WHITE)
             self.display.rectangle(150-(self.regs['set_voltage'][2]*40), 145, 30, 4)
             self.display.rectangle(150-(self.regs['set_voltage'][2]*40), 85, 30, 4)
+        elif self.regs['pmt_status'][2]:
+            self.display.set_pen(self.RED)
         else:
             self.display.set_pen(self.MAGENTA)
         self.display.text("{:04.0f}V".format(self.regs['set_voltage'][1]),25,120,scale=2)

@@ -11,6 +11,9 @@ from primitives import Queue, Pushbutton, Encoder, Switch
 max_interlock_value = 1500	# max value to set for the interlock trigger
 max_voltage_value = 1234 # change to 800
 
+ps_mode = Pin(23, Pin.OUT)
+ps_mode.on()
+
 pmt1 = PmtController()
 pmt1_regs = pmt1.registers
 pmt1_regs['controller'] = 1
@@ -90,6 +93,7 @@ def short_press(pmt_regs):
                 pmt_regs['state'] = (pmt_regs['state'][0], 0, pmt_regs['state'][2])
             else:
                 pmt_regs['mode'] = (True, pmt_regs['mode'][1])
+                pmt_regs['pmt_status'] = (True, pmt_regs['pmt_status'][1], False)
         elif pmt_regs['state'][1] == 4:
             pmt_regs['mode'] = (True, pmt_regs['mode'][1])
             if pmt_regs['mode'][1] != 0:
@@ -248,7 +252,7 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
         reading = adc.read_u16() #* 6.2 / 65536
 #        disp_reading = int(reading * 6.2)>>6
         reading = int(reading * 0.096) - 64
-        reading = 0 if reading <= 10 else reading
+        reading = 0 if reading <= 30 else reading
         if pmt_regs['mode'][1] != 0:
             pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][2])
             if not pmt_regs['pmt_status'][2]:

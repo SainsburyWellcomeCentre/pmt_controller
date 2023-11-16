@@ -1,0 +1,13 @@
+Comment,Description,Designator,Quantity
+
+"C0603-100nF-100V-10%-X7R","0.1µF ±10% 100V Ceramic Capacitor X7R 0603 (1608 Metric)","C1","1"
+"C0603-1nF-50V-1%-C0G","0.001µF ±1% 50V Ceramic Capacitor C0G 0603 (1608 Metric)","C3","1"
+"SSW-120-01-x-S","Conn Socket Strip SKT 20 POS 2.54mm Solder ST Thru-Hole","J1","1"
+"SSW-120-01-x-S - 21-40","Conn Socket Strip SKT 20 POS 2.54mm Solder ST Thru-Hole (pins 21 - 40)","J2","1"
+"53261-0471","MOLEX 1.25mm (.049"") Pitch PicoBlade Header, Surface Mount, Right Angle, Lead-free, 4 Circuits","J3, J4","2"
+"DMG2305UX-7","Power Field-Effect Transistor, 4.2A I(D), 20V, 0.052ohm, 1-Element, P-Channel, Silicon, Metal-oxide Semiconductor FET","Q1","1"
+"R0603-150R-1/16W-0.1%","Surface Mount Resistor 150 Ohm 1/16 W 0.1% 0603 (1608 Metric)","R1","1"
+"R0603-1M-1/16W-0.1%","Surface Mount Resistor 1M Ohm 1/16 W 0.1% 0603 (1608 Metric)","R2, R3","2"
+"R0603-100k-1/16W-0.1%","Surface Mount Resistor 100k Ohm 1/16 W 0.1% 0603 (1608 Metric)","R4","1"
+"R0603-4k7-1/16W-0.1%","Surface Mount Resistor 4.7k Ohm 1/16 W 0.1% 0603 (1608 Metric)","R5","1"
+"OPA2353EA/250","Operational Amplifier, 2 Func, 8000uV Offset-Max, CMOS, PDSO8","U1","1"

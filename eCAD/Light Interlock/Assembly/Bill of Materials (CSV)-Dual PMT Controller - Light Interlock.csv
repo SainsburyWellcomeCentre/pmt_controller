@@ -1,0 +1,10 @@
+Comment,Description,Designator,Quantity
+
+"C0603-100nF-100V-10%-X7R","0.1µF ±10% 100V Ceramic Capacitor X7R 0603 (1608 Metric)","C1","1"
+"PESD5V0S1BA,115","Trans Voltage Suppressor Diode, 130W, 5V V(RWM), Bidirectional, 1 Element, Silicon","D1","1"
+"Header-103","0.1"" spaced holes to solder wires into","P1","1"
+"TEPT5700","Ambient Light Sensor Phototransistor Chip Silicon 570nm 2-Pin T-1 3/4","Q1","1"
+"R0603-150R-1/16W-0.1%","Surface Mount Resistor 150 Ohm 1/16 W 0.1% 0603 (1608 Metric)","R1","1"
+"SM-42TA504","Trimmer, Cermet, 0.25W, 500k ohm, 300V, 10% +/-Tol, 100ppm/Cel, 11 Turn(s), 1918","R2","1"
+"R0603-240k-1/16W-0.1%","Surface Mount Resistor 240k Ohm 1/16 W 0.1% 0603 (1608 Metric)","R3","1"
+"OPA353NA/250","Operational Amplifier, 1 Func, 8000uV Offset-Max, CMOS, PDSO5","U1","1"

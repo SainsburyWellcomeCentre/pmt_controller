@@ -1,0 +1,4 @@
+Layer Pairs Export File for PCB: C:\Users\Graeme\AppData\Local\TempReleases\Snapshot\1\Dual PMT Controller.PcbDoc
+LayersSetName=Top_Bot_Plated_Thru_Holes|DrillFile=dual pmt controller-roundholes-plated.txt|DrillLayers=gtl,g1,g2,gbl
+LayersSetName=Top_Bot_Plated_Slot_Holes|DrillFile=dual pmt controller-slotholes-plated.txt|DrillLayers=gtl,g1,g2,gbl
+LayersSetName=Top_Bot_NonPlated_Thru_Holes|DrillFile=dual pmt controller-roundholes-nonplated.txt|DrillLayers=gtl,g1,g2,gbl

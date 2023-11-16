@@ -1,0 +1,21 @@
+Altium Designer Pick and Place Locations
+C:\Users\Graeme\AppData\Local\TempReleases\Snapshot\1\Assembly\Assembly Outputs\Pick Place for Dual PMT Controller - Light Interlock.csv
+
+========================================================================================================================
+File Design Information:
+
+Date:       18/07/23
+Time:       11:41
+Revision:   Not in VersionControl
+Variant:    No variations
+Units used: mm
+
+"Designator","Comment","Layer","Footprint","Center-X(mm)","Center-Y(mm)","Rotation","Description"
+"U1","OPA353NA/250","TopLayer","DBV0005A_N","-7.0000","18.0000","270","Operational Amplifier, 1 Func, 8000uV Offset-Max, CMOS, PDSO5"
+"R1","R0603-150R-1/16W-0.1%","TopLayer","FP-CPF0603-IPC_B","-5.0000","12.0000","270","Surface Mount Resistor 150 Ohm 1/16 W 0.1% 0603 (1608 Metric)"
+"P1","Header-103","TopLayer","Header-103","0.0000","6.0000","0","0.1" spaced holes to solder wires into"
+"D1","PESD5V0S1BA,115","TopLayer","FP-SOD323-CA-IPC_B","-7.0000","12.2500","90","Trans Voltage Suppressor Diode, 130W, 5V V(RWM), Bidirectional, 1 Element, Silicon"
+"R2","SM-42TA504","TopLayer","SM-42TAxxx_NDC","5.6000","20.0000","0","Trimmer, Cermet, 0.25W, 500k ohm, 300V, 10% +/-Tol, 100ppm/Cel, 11 Turn(s), 1918"
+"C1","C0603-100nF-100V-10%-X7R","TopLayer","FP-GRM188-0_1-e0_2_0_5-IPC_B","-4.2500","17.2500","270","0.1µF ±10% 100V Ceramic Capacitor X7R 0603 (1608 Metric)"
+"R3","R0603-240k-1/16W-0.1%","TopLayer","FP-CPF0603-IPC_B","0.0000","20.5000","270","Surface Mount Resistor 240k Ohm 1/16 W 0.1% 0603 (1608 Metric)"
+"Q1","TEPT5700","TopLayer","LED_TEPT5700_VIS","0.0000","15.0000","90","Ambient Light Sensor Phototransistor Chip Silicon 570nm 2-Pin T-1 3/4"

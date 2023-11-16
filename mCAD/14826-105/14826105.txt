@@ -1,0 +1,13 @@
+﻿"Symbol";"Value";"Unit";
+"TraceParts.PartNumber";"90-18012019-046781";"";
+"REFERENCE";"14826105";"";
+"TraceParts.PartTitle";"19"" Case";"";
+"TraceParts.InstanceId";"90-18012019-04678153IY6DS70FACNV8SV6R1UV2AH";"";
+"DESIGN";"19"" Interscale M";"";
+"TraceParts.PartStatus";"Published";"";
+"TraceParts.PartStatusId";"";"";
+"SUPPLIER";"nVent SCHROFF";"";
+"TraceParts.PartVersion";"1.0.2";"";
+"TRACEPARTS";"TRACEPARTS";"";
+"TraceParts.PartLanguage";"en";"";
+"TraceParts.ClassPath";"NVENT_SCHROFF:90-18012019-046781";"";

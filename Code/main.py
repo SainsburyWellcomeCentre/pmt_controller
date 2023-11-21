@@ -259,12 +259,13 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
         adc = ADC(Pin(26+channel))
         reading = adc.read_u16() #* 6.2 / 65536
 #        disp_reading = int(reading * 6.2)>>6
-        reading = int(reading * 0.096) - 64
         if pmt_regs['controller'] == 1:
             reading = avg(channel1, reading, 4)
+#            print(reading)						# For calibration
         else:
             reading = avg(channel2, reading, 4)
         
+        reading = int(reading * 0.096) - 64
         reading = 0 if reading <= 10 else reading
         if pmt_regs['mode'][1] != 0:
             pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][2])

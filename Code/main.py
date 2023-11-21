@@ -7,9 +7,17 @@ from pmt_display import PmtDisplay, PmtController
 from machine import ADC, I2C, Pin, PWM
 import mcp4725
 from primitives import Queue, Pushbutton, Encoder, Switch
+import array
+from avg_pico import avg
 
-max_interlock_value = 1500	# max value to set for the interlock trigger
-max_voltage_value = 1234 # change to 800
+max_interlock_value = 150	# max value to set for the interlock trigger
+max_voltage_value = 1000 # change to 800
+
+channel1 = array.array('i', (0 for _ in range(19))) # Average over 16 samples = 19: 32 = 35
+channel1[0] = len(channel1)
+
+channel2 = array.array('i', (0 for _ in range(19))) # Average over 16 samples
+channel2[0] = len(channel2)
 
 ps_mode = Pin(23, Pin.OUT)
 ps_mode.on()
@@ -252,7 +260,12 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
         reading = adc.read_u16() #* 6.2 / 65536
 #        disp_reading = int(reading * 6.2)>>6
         reading = int(reading * 0.096) - 64
-        reading = 0 if reading <= 30 else reading
+        if pmt_regs['controller'] == 1:
+            reading = avg(channel1, reading, 4)
+        else:
+            reading = avg(channel2, reading, 4)
+        
+        reading = 0 if reading <= 10 else reading
         if pmt_regs['mode'][1] != 0:
             pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][2])
             if not pmt_regs['pmt_status'][2]:
@@ -304,8 +317,8 @@ async def main():
     # set up reading ADC for light measurement
     asyncio.create_task(read_adc_interlock(1, 3, pmt1_regs, pmt2_regs, pmt1_to_core2, pmt2_to_core2))
     # set up reading ADCs for DAQ input
-    asyncio.create_task(read_DAQ(2, 100, pmt1_regs, pmt1_to_core2))
-    asyncio.create_task(read_DAQ(0, 100, pmt2_regs, pmt2_to_core2))
+    asyncio.create_task(read_DAQ(2, 100, pmt1_regs, pmt1_to_core2))	# was 100 ms
+    asyncio.create_task(read_DAQ(0, 100, pmt2_regs, pmt2_to_core2))	# was 100 ms
     # set up button presses
     short_press1 = pb1.release_func(_short_press1, ())
     double_press1 = pb1.double_func(_double_press1, ())

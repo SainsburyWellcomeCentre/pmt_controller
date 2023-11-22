@@ -265,7 +265,7 @@ async def read_DAQ(channel, period_ms, pmt_regs, q):
         else:
             reading = avg(channel2, reading, 4)
         
-        reading = int(reading * 0.096) - 64
+        reading = int(reading * 0.097) - 82		# other normal values are 0.096 and 64
         reading = 0 if reading <= 10 else reading
         if pmt_regs['mode'][1] != 0:
             pmt_regs['voltage'] = (True, reading, pmt_regs['pmt_status'][2])

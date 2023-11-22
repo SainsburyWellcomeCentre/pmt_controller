@@ -14,7 +14,7 @@ class PmtController():
             'voltage': (False, 0000, False),
             'set_voltage': (False, 0000, 0),
             'interlock': (False, 0000),
-            'set_interlock': (False, 1500, 0),
+            'set_interlock': (False, 150, 0),
             'interlock_status': (False, False),
             'mode': (False, 1)
         }

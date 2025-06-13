@@ -52,6 +52,11 @@ def display():
         lcd.show_border(color)
 
 
+def menu():
+    lcd.show_menu_a()
+    lcd.show_menu_b()
+
+
 def test_main():
     lcd.opening()
 
@@ -59,7 +64,7 @@ def test_main():
     knob.click.callback = knob_callback
 
     device.highlighted_update()
-    main()
+    menu()
     time.sleep_ms(100)
 
 

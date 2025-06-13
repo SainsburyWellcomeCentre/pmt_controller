@@ -16,6 +16,7 @@ class LCD(ST7735):
         # self.font_l = MicroFont("font/victor_B_70.mfnt", cache_index=True)
 
         self.font_h = 24
+        self.widget = Widget()
 
     def show_mode(self, string, color=0xFFFF):
         buf = self.font_s.write(string, framebuf.RGB565, 80, self.font_h, 0, 0, 0xFFFF)
@@ -59,3 +60,64 @@ class LCD(ST7735):
             self.show_region(20, 140, 20 + i, 20 + i + 1, buf)
             self.show_region(20, 140, 108 - i - 1, 108 - i, buf)
             time.sleep_ms(20)
+
+    def show_menu_a(self):
+        temp = self.cs
+        self.cs = self.css[1]
+        line = bytearray(130 * 4 * [0xFF])
+        h = 15
+        v = 0
+        buf = self.font_s.write("Setting", framebuf.RGB565, 100, 30, 0, 0, 0xFFFFF)
+        self.show_region(30, 130, v, v + 30, buf)
+
+        v += 33
+        self.show_region(15, 145, v, v + 1, line)
+
+        v += 2
+        buf = self.font_ss.write("Optical Interlock", framebuf.RGB565, 155, h, 0, 0, 0xFFFFF)
+        self.show_region(5, 160, v, v + h, buf)
+
+        v += 20
+        self.show_region(15, 145, v, v + 1, line)
+
+        v += 2
+        buf = self.font_ss.write("Interlock Threshold", framebuf.RGB565, 155, h, 0, 0, 0xFFFFF)
+        self.show_region(5, 160, v, v + h, buf)
+
+        v += 20
+        self.show_region(15, 145, v, v + 1, line)
+
+        v += 2
+        buf = self.font_ss.write("Brightness", framebuf.RGB565, 80, h, 0, 0, 0xFFFFF)
+        self.show_region(5, 85, v, v + h, buf)
+
+        v += 20
+        self.show_region(15, 145, v, v + 1, line)
+
+        v += 2
+        buf = self.font_ss.write("System Info", framebuf.RGB565, 100, h, 0, 0, 0xFFFFF)
+        self.show_region(5, 105, v, v + h, buf)
+
+        self.cs = temp
+
+    def show_menu_b(self, index=0):
+        temp = self.cs
+        self.cs = self.css[2]
+
+        v = 35
+        self.show_region(5, 19, v, v + 14, self.widget.arrow_l)
+
+        self.cs = temp
+
+
+class Widget:
+    def __init__(self):
+        buf = bytearray(14 * 14 * 2)
+        tri_l = framebuf.FrameBuffer(buf, 14, 14, framebuf.RGB565)
+        tri_l.poly(0, 0, bytearray([0, 0, 14, 7, 0, 14]), 0xFFFF, True)
+
+        self.arrow_l = buf
+        tri_l.fill(0)
+        tri_l.poly(0, 0, bytearray([14, 14, 0, 7, 14, 0]), 0xFFFF, True)
+
+        self.arrow_r = buf
